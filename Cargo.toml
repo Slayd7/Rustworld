@@ -1,0 +1,7 @@
+[package]
+name = "Rustworld"
+version = "0.1.0"
+authors = ["Brad Hopper <bhopper@pdx.edu>"]
+edition = "2018"
+
+[dependencies]
