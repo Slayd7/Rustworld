@@ -6,4 +6,5 @@ edition = "2018"
 
 [dependencies]
 alsa-sys = "0.1.2"
-ggez = "0.5.0-rc.0"
+ggez = "0.4.4"
+rand = "0.4.2"

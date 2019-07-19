@@ -1,25 +1,66 @@
+#![allow(non_snake_case)]
+extern crate ggez;
+extern crate rand;
 use ggez::*;
+use rand::{thread_rng, Rng};
 
-pub fn main() {
-  let state = &mut State { };
+mod tile_lib;
 
-  let c = conf::Conf::new();
-  let (ref mut ctx, ref mut event_loop) = ContextBuilder::new("Rustworld", "bhopper")
-    .conf(c)
-    .build()
-    .unwrap();
-
-  event::run(ctx, event_loop, state).unwrap();
+struct State {
+  shapes: Vec<Shape>,
 }
 
-struct State{}
+enum Shape {
+  Circle(graphics::Point2, f32),
+  Rectangle(graphics::Rect),
+}
 
-// https://github.com/ggez/ggez/blob/master/docs/guides/HelloGgez.md
 impl ggez::event::EventHandler for State {
-  fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
+  fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
     Ok(())
   }
-  fn draw(&mut self, ctx:&mut Context) -> GameResult<()> {
+  fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+    graphics::clear(ctx);
+    for shape in &self.shapes {
+      match shape {
+        &Shape::Rectangle(rect) => {
+          graphics::rectangle(ctx, graphics::DrawMode::Fill, rect).unwrap();
+        }
+        &Shape::Circle(origin, radius) => {
+          graphics::circle(ctx, graphics::DrawMode::Fill, origin, radius, 0.1).unwrap();
+        }
+      }
+    }
+    graphics::present(ctx);
     Ok(())
   }
+}
+
+fn main() {
+  let mut shapes = Vec::new();
+  for _ in 0..8 {
+    if thread_rng().gen_range(0, 2) % 2 == 0 {
+      shapes.push(Shape::Rectangle(ggez::graphics::Rect::new(
+        thread_rng().gen_range(0.0, 800.0),
+        thread_rng().gen_range(0.0, 600.0),
+        thread_rng().gen_range(0.0, 800.0),
+        thread_rng().gen_range(0.0, 600.0),
+      )));
+    } else {
+      shapes.push(Shape::Circle(
+        ggez::graphics::Point2::new(
+          thread_rng().gen_range(0.0, 800.0),
+          thread_rng().gen_range(0.0, 600.0),
+      ),
+      thread_rng().gen_range(0.0, 300.0),
+    
+  ));
+    }
+  }
+
+
+  let state = &mut State { shapes: shapes };
+  let c = conf::Conf::new();
+  let ctx = &mut Context::load_from_conf("title", "author", c).unwrap();
+  event::run(ctx, state).unwrap();
 }
