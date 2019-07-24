@@ -1,10 +1,12 @@
 #![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
 extern crate ggez;
 extern crate rand;
 use ggez::*;
 use rand::{thread_rng, Rng};
 
-mod tile_lib;
+mod rw_tile_lib;
+mod rw_import;
 
 struct State {
   shapes: Vec<Shape>,
