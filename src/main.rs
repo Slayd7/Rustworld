@@ -6,6 +6,10 @@ use ggez::nalgebra::Point2;
 use ggez::*;
 //use rand::{thread_rng, Rng};
 
+
+// mod count; // Need both of these to import other files
+// use count::Count;
+
 const MAPSIZE_MAX_X: i32 = 10;
 const MAPSIZE_MAX_Y: i32 = 10;
 
@@ -30,11 +34,12 @@ impl ggez::event::EventHandler for State {
   }
   fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
     graphics::clear(ctx);
+    println!("Got to draw");
     let mut dst = Point2::new(0.0, 0.0);
-    for i in 0..10 {
-      for j in 0..10 {
-        dst = Point2::new(i as f32 * 100.0, j as f32 * 100.0);
-        graphics::draw(ctx, &self.tileLib.terrain.first().unwrap().sprite, dst, 0.0)?;
+    for x in 0..MAPSIZE_MAX_X {
+      for y in 0..MAPSIZE_MAX_Y {
+        dst = Point2::new(x as f32 * 100.0, y as f32 * 100.0);
+        graphics::draw(ctx, &self.tileMap.at(x, y).unwrap().sprite, dst, 0.0)?;
       }
     }
     dst = Point2::new(30.0, 30.0);
@@ -47,11 +52,13 @@ impl ggez::event::EventHandler for State {
 fn main() 
 {
   let c = conf::Conf::new();
-  let ctx = &mut Context::load_from_conf("title", "author", c).unwrap();
+  let ctx = &mut Context::load_from_conf("Rustworld", "Brad Hopper", c).unwrap();
   let lib = import_tiles(ctx).unwrap();
   let mut map = TileMap::new().unwrap();
-
+  map.generate_map(&lib).unwrap();
   let mut state = State::new(ctx, map).unwrap();
+
+
   event::run(ctx, &mut state).unwrap();
 }
 
@@ -122,12 +129,35 @@ impl TileMap {
     map = Vec::new();
     for x in 0..MAPSIZE_MAX_X {
       map.push(Vec::new());
+      }
     }
       //x.push(tlib.objects.first().unwrap().into());
     Ok(TileMap { map: map } )
   }
-  pub fn at(self, x: i32, y: i32) -> GameResult<GameObj> {
-    Ok(self.map.get(x as usize).unwrap().get(y as usize).unwrap().clone())
+  pub fn at(&self, x: i32, y: i32) -> GameResult<&GameObj> {
+    //Ok(&self.map.get(x as usize).unwrap().get(y as usize))
+    let t = self.map.get(x as usize).unwrap().get(y as usize).unwrap();
+    Ok(t)
+  }
+  pub fn set(self: &mut Self, x: i32, y: i32, newTile: &GameObj) -> GameResult<()> {
+    if x > MAPSIZE_MAX_X || x < 0 || y > MAPSIZE_MAX_Y || y < 0
+    {
+      std::mem::replace(&mut self.at(x,y).unwrap().to_owned(), GameObj::from(newTile));
+    }
+    // This should be an err, need to figure out how to do that correctly
+    Ok(())
+    
+  }
+  pub fn generate_map(self: &mut Self, lib: &TileLibrary) -> GameResult<()> {
+    for x in 0..MAPSIZE_MAX_X {
+      for y in 0..MAPSIZE_MAX_Y {
+        let mut tile = lib.terrain.first().unwrap();
+
+
+        self.set(x,y, tile);
+      }
+    }
+    Ok(())
   }
 
 }
