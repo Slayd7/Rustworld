@@ -188,6 +188,12 @@ impl EventHandler for StateManager {
     }
   }
 
+  fn mouse_wheel_event(&mut self, ctx: &mut Context, _x: i32, y: i32){
+    if let Some(state) = self.states.last_mut() {
+      state.mouse_wheel_event(ctx, _x, y);
+    }
+  }
+
   fn focus_event(&mut self, ctx: &mut Context, gained: bool) {
     if let Some(state) = self.states.last_mut() {
       state.focus_event(ctx, gained);
