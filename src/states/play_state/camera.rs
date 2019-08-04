@@ -2,10 +2,10 @@ use ggez::graphics::Point2;
 use super::{MAPSIZE_MAX_X, MAPSIZE_MAX_Y };
 
 const MAXZOOM: f32 = 2.0;
-const MINZOOM: f32 = 0.5;
+const MINZOOM: f32 = 0.1;
 
 const ZOOMSTEP: f32 = 0.1;
-const MOVESTEP: f32 = 0.5;
+const MOVESTEP: f32 = 1.5;
 
 pub struct Camera {
   pub position: Point2,
@@ -48,18 +48,18 @@ impl Camera {
     let mut x: f32 = tocheck.x;
     let mut y: f32 = tocheck.y;
     let scale: f32 = 100.0 * self.zoomlevel;
-    if &x > &(MAPSIZE_MAX_X as f32 * &scale) 
+    if &x < &((MAPSIZE_MAX_X as f32 + 10.0) * -1.0 * &scale) 
     {
-      x = MAPSIZE_MAX_X as f32 * &scale;
-    } else if &x < &0.0 {
-      x = 0.0;
+      x = (MAPSIZE_MAX_X as f32 + 10.0) * -1.0 * &scale;
+    } else if &x > &(10.0 * 1.0 * &scale) {
+      x = 10.0 * &scale;
     }
 
-    if &y > &(MAPSIZE_MAX_Y as f32 * &scale)
+    if &y < &((MAPSIZE_MAX_Y as f32 + 10.0) * -1.0 * &scale)
     {
-      y = MAPSIZE_MAX_Y as f32 * &scale;
-    } else if &y < &0.0 {
-      y = 0.0;
+      y = (MAPSIZE_MAX_Y as f32 + 10.0) * -1.0 * &scale;
+    } else if &y > &(10.0 * 1.0 * &scale) {
+      y = 10.0 * &scale;
     }
 
     Point2::new(x, y)

@@ -12,8 +12,8 @@ use rand::{Rng, thread_rng};
 use crate::states::{Assets, State, Transition};
 use std::vec::Vec;
 
-const MAPSIZE_MAX_X: i32 = 10;
-const MAPSIZE_MAX_Y: i32 = 10;
+const MAPSIZE_MAX_X: i32 = 50;
+const MAPSIZE_MAX_Y: i32 = 50;
 
 pub struct PlayState {
   spritemap: Vec<u32>,
@@ -43,7 +43,7 @@ impl State for PlayState {
     Ok(Transition::None)
   }
 
-  fn draw(&mut self, ctx: &mut Context, assets: &Assets) -> GameResult<()> {
+  fn draw(&mut self, ctx: &mut Context, assets: &mut Assets) -> GameResult<()> {
     let coords = graphics::get_screen_coordinates(ctx);
     let scale: Point2 = Point2::new(self.camera.zoomlevel, self.camera.zoomlevel);
     let camx = self.camera.position.x as f32;
@@ -62,7 +62,9 @@ impl State for PlayState {
         match self.spritemap.get((x + (y * MAPSIZE_MAX_X)) as usize) {
           Some(i) => {
             let c = format!("grass{}", &i);
-            graphics::draw_ex(ctx, assets.get_image(&c)?, p);
+            assets.draw_image(&c, p);
+//            assets.get_image(&c)?.add(p);
+//            graphics::draw_ex(ctx, assets.get_image(&c)?, p);
           }
           _ => {},
         }

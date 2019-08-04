@@ -69,7 +69,7 @@ impl State for IntroState {
     Ok(Transition::None)
   }
 
-  fn draw(&mut self, ctx: &mut Context, _: &Assets) -> GameResult<()> {
+  fn draw(&mut self, ctx: &mut Context, _: &mut Assets) -> GameResult<()> {
     let coords = graphics::get_screen_coordinates(ctx);
     let text_offset = (self.intro_text.width() / 2) as f32;
     let author_offset = (self.author_text.width() / 2) as f32;

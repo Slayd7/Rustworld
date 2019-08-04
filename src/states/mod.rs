@@ -18,7 +18,7 @@ impl DurationExt for Duration {
 }
 
 pub struct Assets {
-  images: HashMap<String, graphics::Image>,
+  images: HashMap<String, graphics::spritebatch::SpriteBatch>,
   font: HashMap<String, graphics::Font>,
 }
 
@@ -31,13 +31,17 @@ impl Assets {
   }
 
   pub fn add_image(&mut self, name: &str, image: graphics::Image) -> GameResult<()> {
-    self.images.insert(name.to_string(), image);
+    self.images.insert(name.to_string(), graphics::spritebatch::SpriteBatch::new(image));
     Ok(())
   }
 
-  pub fn get_image(&self, name: &str) -> GameResult<&graphics::Image> {
+  pub fn get_image(&self, name: &str) -> GameResult<&graphics::spritebatch::SpriteBatch> {
     let img = self.images.get(name);
     Ok(img.unwrap())
+  }
+
+  pub fn draw_image(&mut self, name: &str, p: graphics::DrawParam) { //
+    self.images.get_mut(name).unwrap().add(p);
   }
 
   pub fn add_font(&mut self, name: &str, font: graphics::Font) -> GameResult<()> {
@@ -61,7 +65,7 @@ pub enum Transition {
 
 pub trait State {
   fn update(&mut self, ctx: &mut Context, assets: &Assets, dt: Duration,) -> GameResult<Transition>;
-  fn draw(&mut self, ctx: &mut Context, assets: &Assets) -> GameResult<()>;
+  fn draw(&mut self, ctx: &mut Context, assets: &mut Assets) -> GameResult<()>;
   fn mouse_button_down_event(&mut self, _ctx: &mut Context, _button: MouseButton, _x: i32, _y: i32,) {}
   fn mouse_button_up_event(&mut self, _ctx: &mut Context, _button: MouseButton, _x: i32, _y: i32,) {}
   fn mouse_motion_event(&mut self, _ctx: &mut Context, _button: MouseState, _x: i32, _y: i32, _xrel: i32, _yrel: i32) {}
@@ -79,7 +83,7 @@ pub struct StateManager {
 
 impl StateManager {
   pub fn new(ctx: &mut Context) -> StateManager {
-    let assets = StateManager::initialize_assets(ctx).unwrap();
+    let mut assets = StateManager::initialize_assets(ctx).unwrap();
     let state = Box::new(IntroState::new(ctx, &assets).unwrap());
 
     StateManager {
@@ -162,8 +166,17 @@ impl EventHandler for StateManager {
     graphics::clear(ctx);
 
     for (_, state) in self.states.iter_mut().enumerate() {
-      state.draw(ctx, &self.assets)?;
+      state.draw(ctx, &mut self.assets)?;
     }
+    let p = graphics::DrawParam {
+      ..Default::default()
+    };
+    for (_, (_, spr)) in self.assets.images.iter_mut().enumerate() {
+      graphics::draw_ex(ctx, spr, p)?;
+      spr.clear();
+    }
+
+    
 
     graphics::present(ctx);
     timer::sleep(Duration::from_secs(0));
