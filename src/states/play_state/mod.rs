@@ -16,8 +16,8 @@ use rand::{Rng, thread_rng};
 use crate::states::{Assets, State, Transition};
 use std::vec::Vec;
 
-const MAPSIZE_MAX_X: i32 = 50;
-const MAPSIZE_MAX_Y: i32 = 50;
+const MAPSIZE_MAX_X: i32 = 30;
+const MAPSIZE_MAX_Y: i32 = 30;
 const TILESIZE: i32 = 100; // side length of square pngs
 
 pub struct PlayState {
@@ -42,6 +42,7 @@ impl PlayState {
 
 impl State for PlayState {
   fn update(&mut self, ctx: &mut Context, assets: &Assets, dt: Duration,) -> GameResult<Transition> {
+    self.entities.update(1000 / ggez::timer::get_delta(ctx).subsec_millis());
     Ok(Transition::None)
   }
 
@@ -50,15 +51,25 @@ impl State for PlayState {
     let scale: Point2 = Point2::new(self.camera.zoomlevel, self.camera.zoomlevel);
     let camx = self.camera.position.x as i32;
     let camy = self.camera.position.y as i32;
-    let tsize = (TILESIZE as f32 * self.camera.zoomlevel) ;
+    let tsize = (TILESIZE as f32 * self.camera.zoomlevel).ceil() ;
 
-    for x in 0..MAPSIZE_MAX_X {
-      for y in 0..MAPSIZE_MAX_Y {
-        let newx = (((x * TILESIZE) as f32 * self.camera.zoomlevel) as i32 + camx) as f32;
-        let newy = (((y * TILESIZE) as f32 * self.camera.zoomlevel) as i32 + camy) as f32;
+    let mut xdrawmin = (-camx / tsize as i32);
+    if xdrawmin < 0 { xdrawmin = 0; }
+    let mut xdrawmax = xdrawmin + (ctx.conf.window_mode.width as i32 / tsize as i32) + 2;
+    if xdrawmax >= MAPSIZE_MAX_X { xdrawmax = MAPSIZE_MAX_X - 1; }
 
-        if newx < -tsize || newx > ctx.conf.window_mode.width as f32 { continue; }
-        if newy < -tsize || newy > ctx.conf.window_mode.height as f32 { continue; }
+    let mut ydrawmin = (-camy / tsize as i32);
+    if ydrawmin < 0 { ydrawmin = 0; }
+    let mut ydrawmax = ydrawmin + (ctx.conf.window_mode.height as i32 / tsize as i32) + 2;
+    if ydrawmax >= MAPSIZE_MAX_Y { ydrawmax = MAPSIZE_MAX_Y - 1; }
+
+    for x in xdrawmin..xdrawmax {
+      for y in ydrawmin..ydrawmax {
+        //let newx = (((x * TILESIZE) as f32 * self.camera.zoomlevel) as i32 + camx) as f32;
+        //let newy = (((y * TILESIZE) as f32 * self.camera.zoomlevel) as i32 + camy) as f32;
+
+        //if newx < -tsize || newx > ctx.conf.window_mode.width as f32 { continue; }
+        //if newy < -tsize || newy > ctx.conf.window_mode.height as f32 { continue; }
 
         let p = graphics::DrawParam {
           dest: Point2::new(
@@ -69,10 +80,7 @@ impl State for PlayState {
         };
         match self.map.tilemap.get((x + (y * MAPSIZE_MAX_X)) as usize) {
           Some(i) => {
-            //let c = format!("grass{}", &i.id);
             assets.draw_image(&i.id, p);
-//            assets.get_image(&c)?.add(p);
-//            graphics::draw_ex(ctx, assets.get_image(&c)?, p);
           }
           _ => {},
         }
@@ -108,7 +116,7 @@ impl State for PlayState {
   }
 
   fn mouse_motion_event(&mut self, ctx: &mut Context, m_state: MouseState, x: i32, y: i32, dx: i32, dy: i32) {
-    if m_state.middle() {
+    if m_state.left() {
       self.camera.movestep(dx, dy);
     }
     self.input.setpos(x, y);

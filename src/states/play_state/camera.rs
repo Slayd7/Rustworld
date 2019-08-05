@@ -65,8 +65,6 @@ impl Camera {
 
     tx = (tx + mx) / scale;
     ty = (ty + my) / scale;
-    
-    println!("Cam position: ({}, {})     Clicked position: ({}, {})    Tile clicked: ({}, {})", -self.position.x, -self.position.y, x, y, tx, ty);
 
     (tx, ty)
   }
