@@ -1,10 +1,12 @@
 mod camera;
 mod input;
 mod map;
+mod entities;
 
 use self::input::Input;
 use self::camera::Camera;
 use self::map::Map;
+use self::entities::{ Entities, Entity };
 use ggez::graphics::Point2;
 use ggez::{graphics, Context, GameResult};
 use std::time::Duration;
@@ -14,14 +16,15 @@ use rand::{Rng, thread_rng};
 use crate::states::{Assets, State, Transition};
 use std::vec::Vec;
 
-const MAPSIZE_MAX_X: i32 = 250;
-const MAPSIZE_MAX_Y: i32 = 250;
+const MAPSIZE_MAX_X: i32 = 50;
+const MAPSIZE_MAX_Y: i32 = 50;
 const TILESIZE: i32 = 100; // side length of square pngs
 
 pub struct PlayState {
   camera: Camera,
   input: Input,
   map: Map,
+  entities: Entities,
 
 }
 
@@ -30,7 +33,10 @@ impl PlayState {
     let mut map = Map::new();
     let mut camera = Camera::new(ctx);
     let mut input = Input::new();
-    Ok( PlayState { camera, input, map } )
+    let mut entities = Entities::new();
+    let e = Entity::new(50, 50, 50);
+    entities.add_entity(e);
+    Ok( PlayState { camera, input, map, entities } )
   }
 }
 
@@ -40,25 +46,31 @@ impl State for PlayState {
   }
 
   fn draw(&mut self, ctx: &mut Context, assets: &mut Assets) -> GameResult<()> {
-    let coords = graphics::get_screen_coordinates(ctx);
+//    let coords = graphics::get_screen_coordinates(ctx);
     let scale: Point2 = Point2::new(self.camera.zoomlevel, self.camera.zoomlevel);
-    let camx = self.camera.position.x as f32;
-    let camy = self.camera.position.y as f32;
-
+    let camx = self.camera.position.x as i32;
+    let camy = self.camera.position.y as i32;
+    let tsize = (TILESIZE as f32 * self.camera.zoomlevel) ;
 
     for x in 0..MAPSIZE_MAX_X {
       for y in 0..MAPSIZE_MAX_Y {
+        let newx = (((x * TILESIZE) as f32 * self.camera.zoomlevel) as i32 + camx) as f32;
+        let newy = (((y * TILESIZE) as f32 * self.camera.zoomlevel) as i32 + camy) as f32;
+
+        if newx < -tsize || newx > ctx.conf.window_mode.width as f32 { continue; }
+        if newy < -tsize || newy > ctx.conf.window_mode.height as f32 { continue; }
+
         let p = graphics::DrawParam {
           dest: Point2::new(
-                ((x * TILESIZE) as f32 * self.camera.zoomlevel) + camx, 
-                ((y * TILESIZE) as f32 * self.camera.zoomlevel) + camy),
+                ((x * TILESIZE) as f32 * self.camera.zoomlevel) + camx as f32, 
+                ((y * TILESIZE) as f32 * self.camera.zoomlevel) + camy as f32),
           scale: scale,
           ..Default::default()
         };
         match self.map.tilemap.get((x + (y * MAPSIZE_MAX_X)) as usize) {
           Some(i) => {
-            let c = format!("grass{}", &i.id);
-            assets.draw_image(&c, p);
+            //let c = format!("grass{}", &i.id);
+            assets.draw_image(&i.id, p);
 //            assets.get_image(&c)?.add(p);
 //            graphics::draw_ex(ctx, assets.get_image(&c)?, p);
           }
@@ -66,6 +78,7 @@ impl State for PlayState {
         }
       }
     }
+    self.entities.draw(camx, camy, scale, assets);
 
     Ok(())
   }

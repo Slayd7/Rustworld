@@ -18,7 +18,7 @@ impl DurationExt for Duration {
 }
 
 pub struct Assets {
-  images: HashMap<String, graphics::spritebatch::SpriteBatch>,
+  images: HashMap<u32, graphics::spritebatch::SpriteBatch>,
   font: HashMap<String, graphics::Font>,
 }
 
@@ -30,18 +30,18 @@ impl Assets {
     }
   }
 
-  pub fn add_image(&mut self, name: &str, image: graphics::Image) -> GameResult<()> {
-    self.images.insert(name.to_string(), graphics::spritebatch::SpriteBatch::new(image));
+  pub fn add_image(&mut self, id: &u32, image: graphics::Image) -> GameResult<()> {
+    self.images.insert(*id, graphics::spritebatch::SpriteBatch::new(image));
     Ok(())
   }
 
-  pub fn get_image(&self, name: &str) -> GameResult<&graphics::spritebatch::SpriteBatch> {
-    let img = self.images.get(name);
+  pub fn get_image(&self, id: &u32) -> GameResult<&graphics::spritebatch::SpriteBatch> {
+    let img = self.images.get(id);
     Ok(img.unwrap())
   }
 
-  pub fn draw_image(&mut self, name: &str, p: graphics::DrawParam) { //
-    self.images.get_mut(name).unwrap().add(p);
+  pub fn draw_image(&mut self, id: &u32, p: graphics::DrawParam) { //
+    self.images.get_mut(id).unwrap().add(p);
   }
 
   pub fn add_font(&mut self, name: &str, font: graphics::Font) -> GameResult<()> {
@@ -96,10 +96,10 @@ impl StateManager {
 // Long term, will want to turn this into an XML reader or something
   fn initialize_assets(ctx: &mut Context) -> GameResult<Assets> {
     let mut assets = Assets::new();
-    assets.add_image("grass0", graphics::Image::new(ctx, "/terrain/grass0.png")?)?;
-    assets.add_image("grass1", graphics::Image::new(ctx, "/terrain/grass1.png")?)?;
-    assets.add_image("grass2", graphics::Image::new(ctx, "/terrain/grass2.png")?)?;
-    assets.add_image("lemmy", graphics::Image::new(ctx, "/objects/lemmy.png")?)?;
+    assets.add_image(&0, graphics::Image::new(ctx, "/terrain/grass0.png")?)?;
+    assets.add_image(&1, graphics::Image::new(ctx, "/terrain/grass1.png")?)?;
+    assets.add_image(&2, graphics::Image::new(ctx, "/terrain/grass2.png")?)?;
+    assets.add_image(&50, graphics::Image::new(ctx, "/objects/lemmy.png")?)?;// GameObjs start at 50
 
     assets.add_font("title", graphics::Font::new(ctx, "/fonts/Rust_never_sleeps.ttf", 32)?,)?;
     assets.add_font("normal", graphics::Font::new(ctx, "/fonts/basic_sans_serif_7.ttf", 18)?,)?;

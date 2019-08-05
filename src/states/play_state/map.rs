@@ -1,13 +1,16 @@
 use super::{MAPSIZE_MAX_Y, MAPSIZE_MAX_X};
 use rand::{Rng, thread_rng};
 
+pub trait GameObj {
+  fn new(id: u32) -> Self;
+}
+
 pub struct Tile {
-//  pub name: &str,
   pub id: u32,
 }
 
-impl Tile {
-  pub fn new(id: u32) -> Self {
+impl GameObj for Tile {
+  fn new(id: u32) -> Self {
     Tile { id }
   }
 }

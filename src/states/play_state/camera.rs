@@ -82,8 +82,6 @@ impl Camera {
     
     let scale: i32 = (TILESIZE as f32 * self.zoomlevel).ceil() as i32;
 
-    println!("tts: ({}, {})", ((mx * scale)- tx), ((my * scale) - ty));
-
     ((mx * scale) - tx, (my * scale) - ty)
   }
 
@@ -95,7 +93,6 @@ impl Camera {
     
     self.tsize = (TILESIZE as f32 * z).ceil() as i32;
 
-    println!("tsize: {}", self.tsize);
     let mut x: i32 = -((MAPSIZE_MAX_X * self.tsize) - self.scrX + self.tsize);
     let mut y: i32 = -((MAPSIZE_MAX_Y * self.tsize) - self.scrY + self.tsize);
 
@@ -104,9 +101,6 @@ impl Camera {
 
     self.min_x = x;
     self.min_y = y;
-
-    println!("{} {} z: {}", self.min_x, self.min_y, z);
-
 
     self.zoomlevel = z;
     self.movestep((-(self.scrX / 2) + mousepos.x as i32) * z as i32, (-(self.scrY / 2) + mousepos.y as i32) * z as i32);
@@ -158,11 +152,5 @@ mod tests {
     let mut c = Camera::new();
     c.zoom(0.8);
     assert_eq!(c.zoomlevel, 0.8);
-  }
-
-#[test]
-  fn test_ibp2() {
-    assert_eq!(Camera::inbounds_point2(Point2::new(5000.0, 5000.0)), Point2::new(MAPSIZE_MAX_X as f32, MAPSIZE_MAX_Y as f32));
-
   }
 }
