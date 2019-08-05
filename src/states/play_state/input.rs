@@ -1,5 +1,6 @@
 use ggez::graphics::Point2;
 use super::{MAPSIZE_MAX_X, MAPSIZE_MAX_Y};
+use super::camera;
 
 pub struct Input {
   pub mouse1down: bool,
@@ -46,7 +47,6 @@ impl Input {
       3 => self.mouse3down = false,
       _ => {},
     }
-    println!("button: {}", &button);
   }
 
   pub fn mwheel(&mut self, dir: f32) {
@@ -56,7 +56,6 @@ impl Input {
   pub fn getmwheeld(&mut self) -> f32 {
     let m = self.mwheeldelta;
     self.mwheeldelta = 0.0;
-    println!("mwheeldelta: {}", &m);
     m
   }
 
@@ -67,14 +66,12 @@ impl Input {
   pub fn getxdelta(&mut self) -> i32 {
     let XD = self.xdelta;
     self.xdelta = 0;
-    println!("xdelta: {}", &XD);
     XD
   }
 
   pub fn getydelta(&mut self) -> i32 {
     let yd = self.ydelta;
     self.ydelta = 0;
-    println!("ydelta: {}", &yd);
     yd
   }
 
@@ -87,9 +84,5 @@ impl Input {
     self.ydelta = self.y - y;
     self.x = x;
     self.y = y;
-    println!("xdelta: {} ydelta: {} x: {} y: {}", self.xdelta, self.ydelta, self.x, self.y);
-
   }
-
-
 }
