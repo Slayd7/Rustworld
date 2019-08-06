@@ -1,19 +1,7 @@
 use super::{MAPSIZE_MAX_Y, MAPSIZE_MAX_X};
+use super::entities::{Entity, Tile};
 use rand::{Rng, thread_rng};
-
-pub trait GameObj {
-  fn new(id: u32) -> Self;
-}
-
-pub struct Tile {
-  pub id: u32,
-}
-
-impl GameObj for Tile {
-  fn new(id: u32) -> Self {
-    Tile { id }
-  }
-}
+use ggez::nalgebra as na;
 
 pub struct Map {
   pub tilemap: Vec<Tile>,
@@ -24,14 +12,9 @@ impl Map {
     let mut tilemap = Vec::new();
     let mut map = Map { tilemap };
     map.generate_map();
+
     map
 
-  }
-
-  pub fn new_seeded(seed: i32) -> Self {
-
-    let mut tilemap = Vec::new();
-    Map { tilemap }
   }
 
   fn generate_map(&mut self) {
@@ -39,12 +22,10 @@ impl Map {
       for y in 0..MAPSIZE_MAX_Y {
         let mut rng = thread_rng();
         let r: u32 = rng.gen();
-        let t = Tile { id: r % 3 };
+        let t = Tile::new(r % 3, x, y, 1.0);
+
         self.tilemap.push(t);
       }
     }
-
   }
-
-
 }
