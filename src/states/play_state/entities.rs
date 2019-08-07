@@ -7,7 +7,7 @@ use ggez::timer;
 
 pub trait Entity {
   fn new(id: u32, x: i32, y: i32, s: f32) -> Self;
-  fn getoccupiedtile(&self, cam: Camera) -> (i32, i32);
+  fn getoccupiedtile(&self) -> (i32, i32);
   fn getid(&self) -> u32;
    
 }
@@ -26,7 +26,7 @@ impl Entity for Tile {
       scrx: TILESIZE as f32 * s,
       scry: TILESIZE as f32 * s,
     } }
-  fn getoccupiedtile(&self, cam: Camera) -> (i32, i32) { (self.x, self.y) }
+  fn getoccupiedtile(&self) -> (i32, i32) { (self.x, self.y) }
   fn getid(&self) -> u32 { self.id }
 }
 
@@ -39,14 +39,13 @@ pub struct Actor {
   y: i32,
   pub speed: f32,
   moving: bool,
-  dest: (i32, i32),
   steps: Vec::<(i32, i32)>,
 }
 
 impl Entity for Actor {
   fn new(id: u32, x: i32, y: i32, s: f32) -> Self {
-    let mut scrx = TILESIZE as f32 * s;
-    let mut scry = TILESIZE as f32 * s;
+    let mut scrx = TILESIZE as f32 * x as f32;
+    let mut scry = TILESIZE as f32 * y as f32;
     let mut s = 0.5;
     let mut m = false;
     let mut a = 0;
@@ -59,29 +58,37 @@ impl Entity for Actor {
             y: y,
             speed: s,
             moving: m,
-            dest: (a, b),
             steps: st }
   }
 
   fn getid(&self) -> u32 { self.id }
 
-  fn getoccupiedtile(&self, cam: Camera) -> (i32, i32) {
-    (self.x / (cam.zoomlevel * TILESIZE as f32) as i32, self.y / (cam.zoomlevel * TILESIZE as f32) as i32)
+  fn getoccupiedtile(&self) -> (i32, i32) {
+    (self.x / TILESIZE, self.y / TILESIZE)
   }
 }
 
 impl Actor {
-  fn movestep(&mut self, x: i32, y: i32, deltaT: u32, tsize: f32) -> bool {
+  pub fn update(&mut self, deltaT: u32) {
+    if self.moving {
+        let a = self.steps.last();
+        let (x, y) = a.unwrap();
+        self.movestep(*x, *y, deltaT);
+      }
+
+  }
+
+
+  /// Interprets grid tiles in x, y into map pixel coordinates and moves one step towards it
+  fn movestep(&mut self, x: i32, y: i32, deltaT: u32) -> bool {
     
     let x = (x * TILESIZE) as f32;
     let y = (y * TILESIZE) as f32;
     let destx = x;
     let desty = y;
 
-    println!("destx: {} desty: {}", destx, desty);
 
     let (x, y) = (-(self.scrx - x as f32), -(self.scry - y as f32));
-    println!("delta: ({}, {})", x, y);
     let mut a = Entities::normalize_withspeed(self, x, y);
     let (x, y) = a; 
     
@@ -95,18 +102,22 @@ impl Actor {
       (self.scry as i32 - desty as i32).abs() <= 2 {
 
       self.steps.pop();
+      println!("pop");
       if self.steps.is_empty() { self.moving = false; }
     }
     true
   }
 
+/// Set move target for actor in grid tiles (x, y)
   pub fn setmovetarget(&mut self, x: i32, y: i32, cam: &mut Camera) -> bool {
-    self.dest = (x, y);
     self.moving = true;
-    self.steps.clear();
-    self.steps.push((x, y));
-    println!("Setting move target: ({}, {})", x, y);
+    self.steps.insert(0, (x, y));
     true
+  }
+
+  pub fn clearmovetarget(&mut self) {
+    self.steps.clear();
+    self.steps.push(self.getoccupiedtile());
   }
 }
 
@@ -135,12 +146,7 @@ impl Entities {
 
   pub fn update(&mut self, deltaT: u32, tsize: f32) {
     for v in self.actors.iter_mut() {
-      if v.moving {
-        let a = v.steps.first();
-        let (x, y) = a.unwrap();
-        v.movestep(*x, *y, deltaT, tsize);
-      }
-
+      v.update(deltaT);
     }
   }
 
@@ -165,7 +171,7 @@ impl Entities {
         scale: scale,
         ..Default::default()
       };
-      assets.draw_image(&v.id, p);
+      assets.draw_actor_image(&v.id, p);
     } 
   }
 

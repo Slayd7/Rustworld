@@ -19,6 +19,8 @@ impl DurationExt for Duration {
 
 pub struct Assets {
   images: HashMap<u32, graphics::spritebatch::SpriteBatch>,
+  actorimages: HashMap<u32, graphics::spritebatch::SpriteBatch>,
+  names: HashMap<String, u32>,
   font: HashMap<String, graphics::Font>,
 }
 
@@ -26,13 +28,22 @@ impl Assets {
   pub fn new() -> Self {
     Self {
       images: HashMap::new(),
+      actorimages: HashMap::new(),
+      names: HashMap::new(),
       font: HashMap::new(),
     }
   }
 
-  pub fn add_image(&mut self, id: &u32, image: graphics::Image) -> GameResult<()> {
+  pub fn add_image(&mut self, name: &str, id: &u32, image: graphics::Image) -> GameResult<()> {
     self.images.insert(*id, graphics::spritebatch::SpriteBatch::new(image));
+    self.names.insert(name.to_string(), *id);
     Ok(())
+  }
+  
+  pub fn add_actor_image(&mut self, name: &str, id: &u32, image: graphics::Image) -> GameResult<()> {
+    self.actorimages.insert(*id, graphics::spritebatch::SpriteBatch::new(image));
+    Ok(())
+
   }
 
   pub fn get_image(&self, id: &u32) -> GameResult<&graphics::spritebatch::SpriteBatch> {
@@ -40,8 +51,23 @@ impl Assets {
     Ok(img.unwrap())
   }
 
+  pub fn get_actor_image(&self, id: &u32) -> GameResult<&graphics::spritebatch::SpriteBatch> {
+    let img = self.actorimages.get(id);
+    Ok(img.unwrap())
+  }
+
+  pub fn get_id(&self, name: &str, id: &u32) -> GameResult<u32> {
+    let id = self.names.get(name);
+    Ok(*id.unwrap())
+
+  }
+
   pub fn draw_image(&mut self, id: &u32, p: graphics::DrawParam) { //
     self.images.get_mut(id).unwrap().add(p);
+  }
+
+  pub fn draw_actor_image(&mut self, id: &u32, p: graphics::DrawParam) {
+    self.actorimages.get_mut(id).unwrap().add(p);
   }
 
   pub fn add_font(&mut self, name: &str, font: graphics::Font) -> GameResult<()> {
@@ -96,10 +122,11 @@ impl StateManager {
 // Long term, will want to turn this into an XML reader or something
   fn initialize_assets(ctx: &mut Context) -> GameResult<Assets> {
     let mut assets = Assets::new();
-    assets.add_image(&0, graphics::Image::new(ctx, "/terrain/grass0.png")?)?;
-    assets.add_image(&1, graphics::Image::new(ctx, "/terrain/grass1.png")?)?;
-    assets.add_image(&2, graphics::Image::new(ctx, "/terrain/grass2.png")?)?;
-    assets.add_image(&50, graphics::Image::new(ctx, "/objects/lemmy.png")?)?;// GameObjs start at 50
+    assets.add_image("grass0", &0, graphics::Image::new(ctx, "/terrain/grass0.png")?)?;
+    assets.add_image("grass1", &1, graphics::Image::new(ctx, "/terrain/grass1.png")?)?;
+    assets.add_image("grass2", &2, graphics::Image::new(ctx, "/terrain/grass2.png")?)?;
+    assets.add_image("water0", &3, graphics::Image::new(ctx, "/terrain/water0.png")?)?;
+    assets.add_actor_image("lemmy", &50, graphics::Image::new(ctx, "/objects/lemmy.png")?)?;// GameObjs start at 50
 
     assets.add_font("title", graphics::Font::new(ctx, "/fonts/Rust_never_sleeps.ttf", 32)?,)?;
     assets.add_font("normal", graphics::Font::new(ctx, "/fonts/basic_sans_serif_7.ttf", 18)?,)?;
@@ -171,7 +198,13 @@ impl EventHandler for StateManager {
     let p = graphics::DrawParam {
       ..Default::default()
     };
+
     for (_, (_, spr)) in self.assets.images.iter_mut().enumerate() {
+      graphics::draw_ex(ctx, spr, p)?;
+      spr.clear();
+    }
+
+    for (_, (_, spr)) in self.assets.actorimages.iter_mut().enumerate() {
       graphics::draw_ex(ctx, spr, p)?;
       spr.clear();
     }

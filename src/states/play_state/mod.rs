@@ -34,7 +34,7 @@ impl PlayState {
     let mut camera = Camera::new(ctx);
     let mut input = Input::new();
     let mut entities = Entities::new();
-    let e = Actor::new(50, 1500, 1500, 1.0);
+    let e = Actor::new(50, MAPSIZE_MAX_X / &2, MAPSIZE_MAX_Y / &2, 1.0);
     entities.add_actor(e);
     Ok( PlayState { camera, input, map, entities } )
   }
@@ -77,7 +77,6 @@ impl State for PlayState {
   }
 
   fn draw(&mut self, ctx: &mut Context, assets: &mut Assets) -> GameResult<()> {
-//    let coords = graphics::get_screen_coordinates(ctx);
     let scale: Point2 = Point2::new(self.camera.zoomlevel, self.camera.zoomlevel);
     let camx = self.camera.position.x;
     let camy = self.camera.position.y;
@@ -95,11 +94,6 @@ impl State for PlayState {
 
     for x in xdrawmin..xdrawmax {
       for y in ydrawmin..ydrawmax {
-        //let newx = (((x * TILESIZE) as f32 * self.camera.zoomlevel) as i32 + camx) as f32;
-        //let newy = (((y * TILESIZE) as f32 * self.camera.zoomlevel) as i32 + camy) as f32;
-
-        //if newx < -tsize || newx > ctx.conf.window_mode.width as f32 { continue; }
-        //if newy < -tsize || newy > ctx.conf.window_mode.height as f32 { continue; }
 
         let p = graphics::DrawParam {
           dest: Point2::new(
