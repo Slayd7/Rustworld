@@ -85,7 +85,7 @@ impl Camera {
   }
 
   pub fn movestep(&mut self, x: f32, y: f32) -> bool {
-    let p = Point2::new(self.position.x + (x * MOVESTEP / self.zoomlevel), self.position.y + (y * MOVESTEP / self.zoomlevel));
+    let p = Point2::new(self.position.x + (x * MOVESTEP ), self.position.y + (y * MOVESTEP ));
     self.position = self.inbounds_point2(p);
     true
   }

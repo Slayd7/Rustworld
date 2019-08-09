@@ -6,7 +6,7 @@ mod entities;
 use self::input::Input;
 use self::camera::Camera;
 use self::map::Map;
-use self::entities::{ Entities, Entity, Actor };
+use self::entities::{ Entities, Entity, Actor, Wall };
 use ggez::graphics::Point2;
 use ggez::{graphics, Context, GameResult};
 use std::time::Duration;
@@ -14,8 +14,10 @@ use ggez::event::{MouseButton, MouseState};
 
 use crate::states::{Assets, State, Transition};
 
-const MAPSIZE_MAX_X: i32 = 300;
-const MAPSIZE_MAX_Y: i32 = 300;
+// Getting stack exhaustion with x=300, y=300
+// Need to figure that out
+const MAPSIZE_MAX_X: i32 = 100;
+const MAPSIZE_MAX_Y: i32 = 100;
 const TILESIZE: i32 = 100; // side length of square pngs
 
 pub struct PlayState {
@@ -32,7 +34,7 @@ impl PlayState {
     let mut camera = Camera::new(ctx);
     let mut input = Input::new();
     let mut entities = Entities::new();
-    let e = Actor::new(50, MAPSIZE_MAX_X / &2, MAPSIZE_MAX_Y / &2, 1.0);
+    let e = Actor::new(assets.get_id("lemmy").unwrap(), MAPSIZE_MAX_X / &2, MAPSIZE_MAX_Y / &2, 1.0);
     entities.add_actor(e);
     Ok( PlayState { camera, input, map, entities } )
   }
@@ -118,7 +120,16 @@ impl State for PlayState {
       MouseButton::Left => {
         self.input.mousedown(1);
         let (a, b) = self.camera.mouse_to_tile(x, y);
-        self.camera.tile_to_screen(a, b);
+        let e = self.map.get_wall_at(a, b);
+        match e {
+          Some(w) => { self.map.clear_wall_at(a, b, &mut self.entities); }
+          None => { 
+            let w = &mut Wall::new(0, a, b, 1.0);
+
+            self.map.set_wall_at(a, b, w, &mut self.entities);
+          }
+        }
+
       }
       MouseButton::Right => {
         self.input.mousedown(2);
@@ -142,7 +153,7 @@ impl State for PlayState {
   }
 
   fn mouse_motion_event(&mut self, ctx: &mut Context, m_state: MouseState, x: i32, y: i32, dx: i32, dy: i32) {
-    if m_state.left() {
+    if m_state.middle() {
       self.camera.movestep(dx as f32, dy as f32);
     }
     self.input.setpos(x, y);

@@ -20,6 +20,7 @@ impl DurationExt for Duration {
 pub struct Assets {
   images: HashMap<u32, graphics::spritebatch::SpriteBatch>,
   actorimages: HashMap<u32, graphics::spritebatch::SpriteBatch>,
+  wallimages: HashMap<u32, graphics::spritebatch::SpriteBatch>,
   names: HashMap<String, u32>,
   font: HashMap<String, graphics::Font>,
 }
@@ -29,6 +30,7 @@ impl Assets {
     Self {
       images: HashMap::new(),
       actorimages: HashMap::new(),
+      wallimages: HashMap::new(),
       names: HashMap::new(),
       font: HashMap::new(),
     }
@@ -42,8 +44,15 @@ impl Assets {
   
   pub fn add_actor_image(&mut self, name: &str, id: &u32, image: graphics::Image) -> GameResult<()> {
     self.actorimages.insert(*id, graphics::spritebatch::SpriteBatch::new(image));
+    self.names.insert(name.to_string(), *id);
     Ok(())
 
+  }
+
+  pub fn add_wall_image(&mut self, name: &str, id: &u32, image: graphics::Image) -> GameResult<()> {
+    self.wallimages.insert(*id, graphics::spritebatch::SpriteBatch::new(image));
+    self.names.insert(name.to_string(), *id);
+    Ok(())
   }
 
   pub fn get_image(&self, id: &u32) -> GameResult<&graphics::spritebatch::SpriteBatch> {
@@ -56,7 +65,12 @@ impl Assets {
     Ok(img.unwrap())
   }
 
-  pub fn get_id(&self, name: &str, id: &u32) -> GameResult<u32> {
+  pub fn get_wall_image(&self, id: &u32) -> GameResult<&graphics::spritebatch::SpriteBatch> {
+    let img = self.wallimages.get(id);
+    Ok(img.unwrap())
+  }
+
+  pub fn get_id(&self, name: &str) -> GameResult<u32> {
     let id = self.names.get(name);
     Ok(*id.unwrap())
 
@@ -68,6 +82,10 @@ impl Assets {
 
   pub fn draw_actor_image(&mut self, id: &u32, p: graphics::DrawParam) {
     self.actorimages.get_mut(id).unwrap().add(p);
+  }
+
+  pub fn draw_wall_image(&mut self, id: &u32, p: graphics::DrawParam) {
+    self.wallimages.get_mut(id).unwrap().add(p);
   }
 
   pub fn add_font(&mut self, name: &str, font: graphics::Font) -> GameResult<()> {
@@ -126,7 +144,8 @@ impl StateManager {
     assets.add_image("grass1", &1, graphics::Image::new(ctx, "/terrain/grass1.png")?)?;
     assets.add_image("grass2", &2, graphics::Image::new(ctx, "/terrain/grass2.png")?)?;
     assets.add_image("water0", &3, graphics::Image::new(ctx, "/terrain/water0.png")?)?;
-    assets.add_actor_image("lemmy", &50, graphics::Image::new(ctx, "/objects/lemmy.png")?)?;// GameObjs start at 50
+    assets.add_actor_image("lemmy", &0, graphics::Image::new(ctx, "/objects/lemmy.png")?)?;
+    assets.add_wall_image("wall0", &0, graphics::Image::new(ctx, "/walls/wall0.png")?)?;
 
     assets.add_font("title", graphics::Font::new(ctx, "/fonts/Rust_never_sleeps.ttf", 32)?,)?;
     assets.add_font("normal", graphics::Font::new(ctx, "/fonts/basic_sans_serif_7.ttf", 18)?,)?;
@@ -209,7 +228,10 @@ impl EventHandler for StateManager {
       spr.clear();
     }
 
-    
+    for (_, (_, spr)) in self.assets.wallimages.iter_mut().enumerate() {
+      graphics::draw_ex(ctx, spr, p)?;
+      spr.clear();
+    }
 
     graphics::present(ctx);
     timer::sleep(Duration::from_secs(0));

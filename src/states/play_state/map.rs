@@ -1,5 +1,5 @@
 use super::{MAPSIZE_MAX_Y, MAPSIZE_MAX_X};
-use super::entities::{Entity, Tile};
+use super::entities::{Entities, Entity, Tile, Wall};
 use ggez::GameResult;
 use ggez::GameError::ResourceLoadError;
 use noise::{ NoiseFn, Perlin };
@@ -9,6 +9,8 @@ use pathfinding::prelude::dijkstra;
 use std::time::SystemTime;
 
 const NOISESCALE: f64 = 0.05;
+
+fn getmapvecidx(x: i32, y: i32) -> usize { (x + (MAPSIZE_MAX_X * y)) as usize }
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct Pos(pub i32, pub i32);
@@ -21,9 +23,8 @@ impl Pos { // Pathfinding is expensive :(
     if x > 0 {
       if y > 0 {
         cost = *costmap.get((x-1 + ((y-1) * MAPSIZE_MAX_Y)) as usize).unwrap();
-        if cost < usize::max_value() { // Impassible
-          ret.push((Pos(x-1, y-1), cost)) ;
-        }
+        // Impassible?
+        if cost < usize::max_value() { ret.push((Pos(x-1, y-1), cost)); }
       }
       if y < (MAPSIZE_MAX_Y - 1) {
         cost = *costmap.get((x-1 + ((y+1) * MAPSIZE_MAX_Y)) as usize).unwrap();
@@ -59,7 +60,7 @@ impl Pos { // Pathfinding is expensive :(
 
 pub struct Map {
   pub tilemap: Vec<Tile>,
-  pub wall_layer: Vec<Tile>,
+  pub build_layer: Vec<Option<Wall>>,
   pub costmap: Vec<usize>,
 
 }
@@ -67,9 +68,10 @@ pub struct Map {
 impl Map {
   pub fn new() -> Self {
     let mut tilemap = Vec::new();
-    let mut wall_layer = Vec::new();
+//    let mut build_layer = Vec::new();
+    let mut build_layer = Vec::new();
     let mut costmap = Vec::new();
-    let mut map = Map { tilemap, wall_layer, costmap };
+    let mut map = Map { tilemap, build_layer, costmap };
     let seed = SystemTime::now();
     match seed.duration_since(SystemTime::UNIX_EPOCH) {
       Ok(elapsed) => { map.generate_map(elapsed.as_secs() as u32); }
@@ -77,7 +79,6 @@ impl Map {
     }
       
     map
-
   }
 
   pub fn getpath(&mut self, from: Pos, to: Pos) -> GameResult<Vec<Pos>> {
@@ -100,29 +101,61 @@ impl Map {
         let t = Map::generate_tile(val, x, y);
         self.costmap.push(t.movecost);
         self.tilemap.push(t);
+        self.build_layer.push(None);
       }
     }
 
   }
 
   pub fn get_tile_at(&self, x: i32, y: i32) -> GameResult<&Tile> {
-    if x < 0 || x >= MAPSIZE_MAX_X || 
-       y < 0 || y >= MAPSIZE_MAX_Y {
+    if !Map::check_bounds(x, y) {
       return Err(ResourceLoadError("Tile out of bounds".to_string()));
     }
-    Ok(self.tilemap.get((x + (MAPSIZE_MAX_X * y)) as usize).unwrap())
+    Ok(self.tilemap.get(getmapvecidx(x, y)).unwrap())
   }
 
   pub fn set_tile_at(&mut self, x: i32, y: i32, t: Tile) -> GameResult<()> {
-    if x < 0 || x >= MAPSIZE_MAX_X ||
-       y < 0 || y >= MAPSIZE_MAX_Y {
+    if !Map::check_bounds(x, y) {
          return Err(ResourceLoadError("Tile out of bounds".to_string()));
     }
-    let idx = (x + (MAPSIZE_MAX_X * y)) as usize;
+    let idx = getmapvecidx(x, y);
     self.tilemap.remove(idx);
     self.tilemap.insert(idx, t);
     Ok(())
 
+  }
+
+  pub fn get_wall_at(&mut self, x: i32, y: i32) -> Option<Wall> {
+    if !Map::check_bounds(x, y) {
+      return None;
+    }
+    *self.build_layer.get(getmapvecidx(x,y)).unwrap()
+  }
+
+  pub fn set_wall_at(&mut self, x: i32, y: i32, w: &mut Wall, entities: &mut Entities) -> GameResult<()> {
+    if !Map::check_bounds(x, y) {
+      return Err(ResourceLoadError("Tile out of bounds".to_string()));
+    }
+    let idx = getmapvecidx(x, y);
+    self.costmap.remove(idx);
+    self.costmap.insert(idx, w.getmovecost());
+    entities.add_wall(w);
+    self.build_layer.remove(idx);
+    self.build_layer.insert(idx, Some(*w));
+    Ok(())
+  }
+
+  pub fn clear_wall_at(&mut self, x: i32, y: i32, entities: &mut Entities) -> GameResult<()> {
+    if !Map::check_bounds(x, y) {
+      return Err(ResourceLoadError("Tile out of bounds".to_string()));
+    }
+    let idx = getmapvecidx(x, y);
+    let w = self.build_layer.remove(idx);
+    self.build_layer.insert(idx, None);
+    self.costmap.remove(idx);
+    entities.remove_wall(&w.unwrap());
+    self.costmap.insert(idx, self.get_tile_at(x, y).unwrap().getmovecost()); 
+    Ok(())
   }
 
   fn island_mask(val: f64, x: i32, y: i32) -> f64 {
@@ -152,5 +185,13 @@ impl Map {
     let mut t = Tile::new(m, x, y, 1.0);
     t.setmovecost(cost);
     t
+  }
+
+  fn check_bounds(x: i32, y: i32) -> bool {
+    if x < 0 || x >= MAPSIZE_MAX_X ||
+       y < 0 || y >= MAPSIZE_MAX_Y {
+         return false;
+    }
+    true
   }
 }

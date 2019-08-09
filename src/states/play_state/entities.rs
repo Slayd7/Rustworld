@@ -18,26 +18,70 @@ pub struct Tile {
   pub scry: f32,
   x: i32,
   y: i32,
-  pub movecost: usize,
+  pub movecost: usize,  // dijkstra weight
 }
 
 impl Tile {
-  pub fn setmovecost(&mut self, cost: usize) {
-    self.movecost = cost;
-  }
+  pub fn setmovecost(&mut self, cost: usize) { self.movecost = cost; }
+  pub fn getmovecost(&self) -> usize { self.movecost }
 }
 
 impl Entity for Tile {
   fn new(id: u32, x: i32, y: i32, s: f32) -> Self { 
     Tile { id: id, x: x, y: y,
-      scrx: TILESIZE as f32 * s,
-      scry: TILESIZE as f32 * s,
+      scrx: (TILESIZE * x) as f32 * s,
+      scry: (TILESIZE * y) as f32 * s,
       movecost: 1 as usize,
     } }
   fn getoccupiedtile(&self) -> (i32, i32) { (self.x, self.y) }
   fn getid(&self) -> u32 { self.id }
   fn getposition(&self) -> (f32, f32) { (self.scrx, self.scry) }
 }
+
+pub trait Buildable {
+  fn setentityid(&mut self, i: u32);
+  fn getentityid(&self) -> u32;
+}
+
+#[derive(Copy, Clone)]
+pub struct Wall {
+  pub id: u32,
+  pub scrx: f32,
+  pub scry: f32,
+  pub rotation: f32,
+  x: i32,
+  y: i32,
+  pub crossable: bool,  // so we can use this for short barriers, doors, etc
+  pub movecost: usize,  // dijkstra weight
+  entityid: u32,
+}
+
+impl Wall {
+  pub fn getmovecost(&self) -> usize { self.movecost }
+}
+
+impl Buildable for Wall {
+  fn setentityid(&mut self, i: u32) { self.entityid = i; }
+  fn getentityid(&self) -> u32 { self.entityid }
+}
+  
+impl Entity for Wall {
+  fn new(id: u32, x: i32, y: i32, s: f32) -> Self {
+    let mut e = 0;
+    Wall {id: id, x: x, y: y,
+      scrx: (TILESIZE * x) as f32 * s,
+      scry: (TILESIZE * y) as f32 * s,
+      rotation: 0.0,
+      crossable: false,
+      movecost: usize::max_value(),
+      entityid: e,
+    }
+  }
+  fn getoccupiedtile(&self) -> (i32, i32) { (self.x, self.y) }
+  fn getid(&self) -> u32 { self.id }
+  fn getposition(&self) -> (f32, f32) { (self.scrx, self.scry) }
+}
+
 
 
 pub struct Actor {
@@ -147,12 +191,13 @@ impl Actor {
 
 pub struct Entities {
   tiles: Vec<Tile>,
+  buildings: Vec<Wall>,
   actors: Vec<Actor>,
 }
 
 impl Entities {
   pub fn new() -> Self {
-    Entities { tiles: Vec::new(), actors: Vec::new(), }
+    Entities { tiles: Vec::new(), buildings: Vec::new(), actors: Vec::new(), }
   }
 
   pub fn add_tile(&mut self, tile: Tile) {
@@ -163,9 +208,21 @@ impl Entities {
     self.actors.push(act);
   }
 
+//TEMPORARY
   pub fn get_actor(&mut self) -> &mut Actor {
     self.actors.first_mut().unwrap()
 
+  }
+
+  pub fn add_wall(&mut self, wall: &mut Wall) {
+    println!("len: {}", self.buildings.len());
+    wall.setentityid(self.buildings.len() as u32);
+    self.buildings.push(*wall);
+  }
+
+  pub fn remove_wall(&mut self, wall: &Wall) {
+    println!("getentid: {}", wall.getentityid());
+    self.buildings.remove(wall.getentityid() as usize);
   }
 
   pub fn update(&mut self, deltaT: u32, tsize: f32) {
@@ -197,6 +254,17 @@ impl Entities {
       };
       assets.draw_actor_image(&v.id, p);
     } 
+    let mut i = 0;
+    for v in self.buildings.iter_mut() {
+      let p = DrawParam {
+        dest: Point2::new(camx as f32 + (v.scrx * scale.x), camy as f32 + (v.scry * scale.y)),
+        scale: scale,
+        rotation: v.rotation,
+        ..Default::default()
+      };
+      i = i + 1;
+      assets.draw_wall_image(&v.id, p);
+    }
   }
 
 }
