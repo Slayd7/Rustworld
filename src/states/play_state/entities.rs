@@ -1,14 +1,14 @@
 use super::TILESIZE;
-use super::PlayState;
 use super::camera::Camera;
 use crate::states::Assets;
 use ggez::graphics::{ DrawParam, Point2 };
-use ggez::timer;
+use super::map::{Pos, Map};
 
 pub trait Entity {
   fn new(id: u32, x: i32, y: i32, s: f32) -> Self;
-  fn getoccupiedtile(&self) -> (i32, i32);
+  fn getoccupiedtile(&self) -> (i32, i32); // Get tile position
   fn getid(&self) -> u32;
+  fn getposition(&self) -> (f32, f32); // Get map position (where map position = tile position * TILESIZE)
    
 }
 
@@ -18,6 +18,13 @@ pub struct Tile {
   pub scry: f32,
   x: i32,
   y: i32,
+  pub movecost: usize,
+}
+
+impl Tile {
+  pub fn setmovecost(&mut self, cost: usize) {
+    self.movecost = cost;
+  }
 }
 
 impl Entity for Tile {
@@ -25,9 +32,11 @@ impl Entity for Tile {
     Tile { id: id, x: x, y: y,
       scrx: TILESIZE as f32 * s,
       scry: TILESIZE as f32 * s,
+      movecost: 1 as usize,
     } }
   fn getoccupiedtile(&self) -> (i32, i32) { (self.x, self.y) }
   fn getid(&self) -> u32 { self.id }
+  fn getposition(&self) -> (f32, f32) { (self.scrx, self.scry) }
 }
 
 
@@ -64,14 +73,15 @@ impl Entity for Actor {
   fn getid(&self) -> u32 { self.id }
 
   fn getoccupiedtile(&self) -> (i32, i32) {
-    (self.x / TILESIZE, self.y / TILESIZE)
+    (self.scrx as i32 / TILESIZE, self.scry as i32 / TILESIZE)
   }
+  fn getposition(&self) -> (f32, f32) { (self.scrx, self.scry) }
 }
 
 impl Actor {
   pub fn update(&mut self, deltaT: u32) {
     if self.moving {
-        let a = self.steps.last();
+        let a = self.steps.first();
         let (x, y) = a.unwrap();
         self.movestep(*x, *y, deltaT);
       }
@@ -81,7 +91,6 @@ impl Actor {
 
   /// Interprets grid tiles in x, y into map pixel coordinates and moves one step towards it
   fn movestep(&mut self, x: i32, y: i32, deltaT: u32) -> bool {
-    
     let x = (x * TILESIZE) as f32;
     let y = (y * TILESIZE) as f32;
     let destx = x;
@@ -92,8 +101,8 @@ impl Actor {
     let mut a = Entities::normalize_withspeed(self, x, y);
     let (x, y) = a; 
     
-    let x = (self.scrx + (x * deltaT as f32)) ;
-    let y = (self.scry + (y * deltaT as f32)) ;
+    let x = self.scrx + (x * deltaT as f32) ;
+    let y = self.scry + (y * deltaT as f32) ;
 
 
     self.scrx = x; 
@@ -101,18 +110,33 @@ impl Actor {
     if (self.scrx as i32 - destx as i32).abs() <= 2 &&
       (self.scry as i32 - desty as i32).abs() <= 2 {
 
-      self.steps.pop();
-      println!("pop");
+      self.steps.remove(0);
       if self.steps.is_empty() { self.moving = false; }
     }
+
+    let (x,y) = self.getoccupiedtile();
+    self.x = x;
+    self.y = y;
     true
   }
 
 /// Set move target for actor in grid tiles (x, y)
-  pub fn setmovetarget(&mut self, x: i32, y: i32, cam: &mut Camera) -> bool {
-    self.moving = true;
-    self.steps.insert(0, (x, y));
-    true
+  pub fn setmovetarget(&mut self, x: i32, y: i32, cam: &mut Camera, map: &mut Map) -> bool {
+    if self.x == x && self.y == y { return false; }
+    let steps = map.getpath(Pos(self.x, self.y), Pos(x, y));
+    match steps {
+      Ok(mut steps) => {
+        self.steps.clear();
+        self.moving = true;
+        steps.remove(0);
+        for s in steps {
+          let Pos(x, y) = s;
+          self.steps.push((x, y));
+        }
+        true
+        }
+      Err(e) => { false },
+    }
   }
 
   pub fn clearmovetarget(&mut self) {

@@ -1,8 +1,8 @@
 use ggez::graphics::Point2;
 use super::{MAPSIZE_MAX_X, MAPSIZE_MAX_Y, TILESIZE };
 
-const ZOOMLEVELS: usize = 7;
-const ZOOMSTEP: [f32; ZOOMLEVELS] = [0.1, 0.2, 0.4, 0.8, 1.0, 1.5, 2.0];
+const ZOOMLEVELS: usize = 12;
+const ZOOMSTEP: [f32; ZOOMLEVELS] = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2];
 const MOVESTEP: f32 = 1.0;
 
 pub struct Camera {
@@ -25,8 +25,8 @@ impl Camera {
   pub fn new(ctx: &mut ggez::Context) -> Self {
     Camera {
       position: Point2::new((MAPSIZE_MAX_X as f32 / 2.0) * -TILESIZE as f32, (MAPSIZE_MAX_Y as f32 / 2.0) * -TILESIZE as f32),
-      zoomlevel: 1.6,
-      zoomstep: 4,
+      zoomlevel: 1.0,
+      zoomstep: 9,
 
       scrX: ctx.conf.window_mode.width as i32,
       scrY: ctx.conf.window_mode.height as i32,
@@ -40,13 +40,6 @@ impl Camera {
       min_y: -((MAPSIZE_MAX_Y * TILESIZE) - ctx.conf.window_mode.height as i32 - TILESIZE), 
 
     }
-  }
-
-  pub fn move_to(&mut self, newpos: Point2) -> bool {
-
-    self.position = self.inbounds_point2(newpos);
-
-    true
   }
 
 /// Mouse_To_Tile (&mut self, x: i32, y: i32) -> (i32, i32)
@@ -73,7 +66,7 @@ impl Camera {
     
     self.zoomlevel = ZOOMSTEP[self.zoomstep as usize];
     
-    self.tsize = (TILESIZE as f32 * self.zoomlevel);
+    self.tsize = TILESIZE as f32 * self.zoomlevel;
 
     let mut x: i32 = -((MAPSIZE_MAX_X as f32 * self.tsize) - self.tsize) as i32 - self.scrX;
     let mut y: i32 = -((MAPSIZE_MAX_Y as f32 * self.tsize) - self.tsize) as i32 - self.scrY;

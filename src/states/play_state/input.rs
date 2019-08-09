@@ -1,6 +1,6 @@
-use ggez::graphics::Point2;
-use super::{MAPSIZE_MAX_X, MAPSIZE_MAX_Y};
-use super::camera;
+//use ggez::graphics::Point2;
+//use super::{MAPSIZE_MAX_X, MAPSIZE_MAX_Y};
+//use super::camera;
 
 pub struct Input {
   pub mouse1down: bool,

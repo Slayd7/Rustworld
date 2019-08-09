@@ -11,10 +11,8 @@ use ggez::graphics::Point2;
 use ggez::{graphics, Context, GameResult};
 use std::time::Duration;
 use ggez::event::{MouseButton, MouseState};
-use rand::{Rng, thread_rng};
 
 use crate::states::{Assets, State, Transition};
-use std::vec::Vec;
 
 const MAPSIZE_MAX_X: i32 = 300;
 const MAPSIZE_MAX_Y: i32 = 300;
@@ -80,7 +78,7 @@ impl State for PlayState {
     let scale: Point2 = Point2::new(self.camera.zoomlevel, self.camera.zoomlevel);
     let camx = self.camera.position.x;
     let camy = self.camera.position.y;
-    let tsize = (TILESIZE as f32 * self.camera.zoomlevel);
+    let tsize = TILESIZE as f32 * self.camera.zoomlevel;
 
     let mut xdrawmin = ((-camx / tsize) - 1.0) as i32;
     if xdrawmin < 0 { xdrawmin = 0; }
@@ -124,11 +122,8 @@ impl State for PlayState {
       }
       MouseButton::Right => {
         self.input.mousedown(2);
-        println!("mouse x: {} y: {}", x, y);
         let (a, b) = self.camera.mouse_to_tile(x, y);
-        println!("tile x: {} y: {}", a, b);
-        self.entities.get_actor().setmovetarget(a, b, &mut self.camera);
-
+        self.entities.get_actor().setmovetarget(a, b, &mut self.camera, &mut self.map);
       }
       MouseButton::Middle => self.input.mousedown(3),
       _ => {},
