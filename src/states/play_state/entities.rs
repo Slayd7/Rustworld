@@ -3,13 +3,25 @@ use super::camera::Camera;
 use crate::states::Assets;
 use ggez::graphics::{ DrawParam, Point2 };
 use super::map::{Pos, Map};
+use std::collections::HashMap;
+
+pub trait BuildableEntity: Buildable + Entity {}
 
 pub trait Entity {
-  fn new(id: u32, x: i32, y: i32, s: f32) -> Self;
   fn getoccupiedtile(&self) -> (i32, i32); // Get tile position
   fn getid(&self) -> u32;
   fn getposition(&self) -> (f32, f32); // Get map position (where map position = tile position * TILESIZE)
-   
+  fn getrotation(&self) -> f32;
+  fn getdrawparams(&self, camx: f32, camy: f32, scale: Point2) -> DrawParam { 
+    let (x, y) = self.getposition();
+    let p = DrawParam {
+      dest: Point2::new(camx as f32 + (x * scale.x), camy as f32 + (y * scale.y)),
+      scale: scale,
+      rotation: self.getrotation(),
+      ..Default::default()
+    };
+    p
+  }
 }
 
 pub struct Tile {
@@ -22,27 +34,35 @@ pub struct Tile {
 }
 
 impl Tile {
-  pub fn setmovecost(&mut self, cost: usize) { self.movecost = cost; }
-  pub fn getmovecost(&self) -> usize { self.movecost }
-}
-
-impl Entity for Tile {
-  fn new(id: u32, x: i32, y: i32, s: f32) -> Self { 
+  pub fn new(id: u32, x: i32, y: i32, s: f32) -> Self { 
     Tile { id: id, x: x, y: y,
       scrx: (TILESIZE * x) as f32 * s,
       scry: (TILESIZE * y) as f32 * s,
       movecost: 1 as usize,
     } }
+  pub fn setmovecost(&mut self, cost: usize) { self.movecost = cost; }
+  pub fn getmovecost(&self) -> usize { self.movecost }
+}
+
+impl Entity for Tile {
   fn getoccupiedtile(&self) -> (i32, i32) { (self.x, self.y) }
   fn getid(&self) -> u32 { self.id }
   fn getposition(&self) -> (f32, f32) { (self.scrx, self.scry) }
+  fn getrotation(&self) -> f32 { 0.0 }
 }
 
 pub trait Buildable {
-  fn setentityid(&mut self, i: u32);
-  fn getentityid(&self) -> u32;
+  fn setentityid(&mut self, i: u64);
+  fn getentityid(&self) -> u64;
+  fn getmovecost(&self) -> usize;
 }
 
+impl PartialEq for Buildable {
+  fn eq(&self, other: &Self) -> bool {
+    self.getentityid() == other.getentityid()
+  }
+}
+  
 #[derive(Copy, Clone)]
 pub struct Wall {
   pub id: u32,
@@ -53,21 +73,11 @@ pub struct Wall {
   y: i32,
   pub crossable: bool,  // so we can use this for short barriers, doors, etc
   pub movecost: usize,  // dijkstra weight
-  entityid: u32,
+  entityid: u64,
 }
 
 impl Wall {
-  pub fn getmovecost(&self) -> usize { self.movecost }
-}
-
-impl Buildable for Wall {
-  fn setentityid(&mut self, i: u32) { self.entityid = i; }
-  fn getentityid(&self) -> u32 { self.entityid }
-}
-  
-impl Entity for Wall {
-  fn new(id: u32, x: i32, y: i32, s: f32) -> Self {
-    let mut e = 0;
+  pub fn new(id: u32, x: i32, y: i32, s: f32, e: u64) -> Self {
     Wall {id: id, x: x, y: y,
       scrx: (TILESIZE * x) as f32 * s,
       scry: (TILESIZE * y) as f32 * s,
@@ -77,9 +87,27 @@ impl Entity for Wall {
       entityid: e,
     }
   }
+}
+
+impl Buildable for Wall {
+  fn setentityid(&mut self, i: u64) { self.entityid = i; }
+  fn getentityid(&self) -> u64 { self.entityid }
+  fn getmovecost(&self) -> usize { self.movecost }
+}
+
+impl Buildable for &mut Wall {
+  fn getentityid(&self) -> u64 { self.entityid }
+  fn setentityid(&mut self, i: u64) { self.entityid = i; }
+  fn getmovecost(&self) -> usize { self.movecost }
+}
+
+impl BuildableEntity for Wall {}
+
+impl Entity for Wall {
   fn getoccupiedtile(&self) -> (i32, i32) { (self.x, self.y) }
   fn getid(&self) -> u32 { self.id }
   fn getposition(&self) -> (f32, f32) { (self.scrx, self.scry) }
+  fn getrotation(&self) -> f32 { self.rotation }
 }
 
 
@@ -96,7 +124,14 @@ pub struct Actor {
 }
 
 impl Entity for Actor {
-  fn new(id: u32, x: i32, y: i32, s: f32) -> Self {
+  fn getid(&self) -> u32 { self.id }
+  fn getoccupiedtile(&self) -> (i32, i32) { (self.scrx as i32 / TILESIZE, self.scry as i32 / TILESIZE) }
+  fn getposition(&self) -> (f32, f32) { (self.scrx, self.scry) }
+  fn getrotation(&self) -> f32 { 0.0 }
+}
+
+impl Actor {
+  pub fn new(id: u32, x: i32, y: i32, s: f32) -> Self {
     let mut scrx = TILESIZE as f32 * x as f32;
     let mut scry = TILESIZE as f32 * y as f32;
     let mut s = 0.5;
@@ -114,15 +149,6 @@ impl Entity for Actor {
             steps: st }
   }
 
-  fn getid(&self) -> u32 { self.id }
-
-  fn getoccupiedtile(&self) -> (i32, i32) {
-    (self.scrx as i32 / TILESIZE, self.scry as i32 / TILESIZE)
-  }
-  fn getposition(&self) -> (f32, f32) { (self.scrx, self.scry) }
-}
-
-impl Actor {
   pub fn update(&mut self, deltaT: u32) {
     if self.moving {
         let a = self.steps.first();
@@ -191,14 +217,18 @@ impl Actor {
 
 pub struct Entities {
   tiles: Vec<Tile>,
-  buildings: Vec<Wall>,
+  buildings: HashMap<u64, Box<BuildableEntity>>,
   actors: Vec<Actor>,
+  entityindex: u64,
 }
 
 impl Entities {
   pub fn new() -> Self {
-    Entities { tiles: Vec::new(), buildings: Vec::new(), actors: Vec::new(), }
+    let mut e: u64 = 0;
+    Entities { tiles: Vec::new(), buildings: HashMap::new(), actors: Vec::new(), entityindex: e, }
   }
+
+  pub fn getindex(&self) -> u64 { self.entityindex }
 
   pub fn add_tile(&mut self, tile: Tile) {
     self.tiles.push(tile);
@@ -214,15 +244,16 @@ impl Entities {
 
   }
 
-  pub fn add_wall(&mut self, wall: &mut Wall) {
-    println!("len: {}", self.buildings.len());
-    wall.setentityid(self.buildings.len() as u32);
-    self.buildings.push(*wall);
+  pub fn add_building<T: BuildableEntity + 'static> (&mut self, mut bldg: T) {
+    bldg.setentityid(self.entityindex);
+    let mut b = Box::new(bldg);
+    b.setentityid(self.entityindex);
+    self.buildings.insert(self.entityindex, b);
+    self.entityindex = self.entityindex + 1;
   }
 
-  pub fn remove_wall(&mut self, wall: &Wall) {
-    println!("getentid: {}", wall.getentityid());
-    self.buildings.remove(wall.getentityid() as usize);
+  pub fn remove_building (&mut self, id: u64) {
+    self.buildings.remove(&id);
   }
 
   pub fn update(&mut self, deltaT: u32, tsize: f32) {
@@ -239,34 +270,19 @@ impl Entities {
   
   pub fn draw(&mut self, camx: i32, camy: i32, scale: Point2, assets: &mut Assets) {
     for v in self.tiles.iter_mut() {
-      let p = DrawParam {
-        dest: Point2::new(camx as f32 + (v.scrx * scale.x), camy as f32 + (v.scry * scale.y)),
-        scale: scale,
-        ..Default::default()
-      };
-      assets.draw_image(&v.id, p);
+      let p = &v.getdrawparams(camx as f32, camy as f32, scale);
+      assets.draw_image(&v.id, *p);
     } 
-    for v in self.actors.iter_mut() {
-      let p = DrawParam {
-        dest: Point2::new(camx as f32 + (v.scrx * scale.x), camy as f32 + (v.scry * scale.y)),
-        scale: scale,
-        ..Default::default()
-      };
-      assets.draw_actor_image(&v.id, p);
-    } 
-    let mut i = 0;
     for v in self.buildings.iter_mut() {
-      let p = DrawParam {
-        dest: Point2::new(camx as f32 + (v.scrx * scale.x), camy as f32 + (v.scry * scale.y)),
-        scale: scale,
-        rotation: v.rotation,
-        ..Default::default()
-      };
-      i = i + 1;
-      assets.draw_wall_image(&v.id, p);
+      let (a, b) = v;
+      let p = &b.getdrawparams(camx as f32, camy as f32, scale);
+      assets.draw_building_image(&b.getid(), *p);
     }
+    for v in self.actors.iter_mut() {
+      let p = &v.getdrawparams(camx as f32, camy as f32, scale);
+      assets.draw_actor_image(&v.id, *p);
+    } 
   }
-
 }
 
 #[cfg(test)]

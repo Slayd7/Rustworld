@@ -20,7 +20,7 @@ impl DurationExt for Duration {
 pub struct Assets {
   images: HashMap<u32, graphics::spritebatch::SpriteBatch>,
   actorimages: HashMap<u32, graphics::spritebatch::SpriteBatch>,
-  wallimages: HashMap<u32, graphics::spritebatch::SpriteBatch>,
+  buildingimages: HashMap<u32, graphics::spritebatch::SpriteBatch>,
   names: HashMap<String, u32>,
   font: HashMap<String, graphics::Font>,
 }
@@ -30,7 +30,7 @@ impl Assets {
     Self {
       images: HashMap::new(),
       actorimages: HashMap::new(),
-      wallimages: HashMap::new(),
+      buildingimages: HashMap::new(),
       names: HashMap::new(),
       font: HashMap::new(),
     }
@@ -49,8 +49,8 @@ impl Assets {
 
   }
 
-  pub fn add_wall_image(&mut self, name: &str, id: &u32, image: graphics::Image) -> GameResult<()> {
-    self.wallimages.insert(*id, graphics::spritebatch::SpriteBatch::new(image));
+  pub fn add_building_image(&mut self, name: &str, id: &u32, image: graphics::Image) -> GameResult<()> {
+    self.buildingimages.insert(*id, graphics::spritebatch::SpriteBatch::new(image));
     self.names.insert(name.to_string(), *id);
     Ok(())
   }
@@ -65,8 +65,8 @@ impl Assets {
     Ok(img.unwrap())
   }
 
-  pub fn get_wall_image(&self, id: &u32) -> GameResult<&graphics::spritebatch::SpriteBatch> {
-    let img = self.wallimages.get(id);
+  pub fn get_building_image(&self, id: &u32) -> GameResult<&graphics::spritebatch::SpriteBatch> {
+    let img = self.buildingimages.get(id);
     Ok(img.unwrap())
   }
 
@@ -84,8 +84,8 @@ impl Assets {
     self.actorimages.get_mut(id).unwrap().add(p);
   }
 
-  pub fn draw_wall_image(&mut self, id: &u32, p: graphics::DrawParam) {
-    self.wallimages.get_mut(id).unwrap().add(p);
+  pub fn draw_building_image(&mut self, id: &u32, p: graphics::DrawParam) {
+    self.buildingimages.get_mut(id).unwrap().add(p);
   }
 
   pub fn add_font(&mut self, name: &str, font: graphics::Font) -> GameResult<()> {
@@ -145,7 +145,7 @@ impl StateManager {
     assets.add_image("grass2", &2, graphics::Image::new(ctx, "/terrain/grass2.png")?)?;
     assets.add_image("water0", &3, graphics::Image::new(ctx, "/terrain/water0.png")?)?;
     assets.add_actor_image("lemmy", &0, graphics::Image::new(ctx, "/objects/lemmy.png")?)?;
-    assets.add_wall_image("wall0", &0, graphics::Image::new(ctx, "/walls/wall0.png")?)?;
+    assets.add_building_image("wall0", &0, graphics::Image::new(ctx, "/walls/wall0.png")?)?;
 
     assets.add_font("title", graphics::Font::new(ctx, "/fonts/Rust_never_sleeps.ttf", 32)?,)?;
     assets.add_font("normal", graphics::Font::new(ctx, "/fonts/basic_sans_serif_7.ttf", 18)?,)?;
@@ -228,7 +228,7 @@ impl EventHandler for StateManager {
       spr.clear();
     }
 
-    for (_, (_, spr)) in self.assets.wallimages.iter_mut().enumerate() {
+    for (_, (_, spr)) in self.assets.buildingimages.iter_mut().enumerate() {
       graphics::draw_ex(ctx, spr, p)?;
       spr.clear();
     }

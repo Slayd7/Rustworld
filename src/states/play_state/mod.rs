@@ -120,14 +120,12 @@ impl State for PlayState {
       MouseButton::Left => {
         self.input.mousedown(1);
         let (a, b) = self.camera.mouse_to_tile(x, y);
-        let e = self.map.get_wall_at(a, b);
-        match e {
-          Some(w) => { self.map.clear_wall_at(a, b, &mut self.entities); }
-          None => { 
-            let w = &mut Wall::new(0, a, b, 1.0);
+        if self.map.get_building_at(a, b) {
+          self.map.clear_building_at(a, b, &mut self.entities); 
+        } else {
+          let mut  w = Wall::new(0, a, b, 1.0, self.entities.getindex());
 
-            self.map.set_wall_at(a, b, w, &mut self.entities);
-          }
+          self.map.set_building_at(a, b, w, &mut self.entities);
         }
 
       }

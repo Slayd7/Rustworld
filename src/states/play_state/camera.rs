@@ -1,8 +1,8 @@
 use ggez::graphics::Point2;
 use super::{MAPSIZE_MAX_X, MAPSIZE_MAX_Y, TILESIZE };
 
-const ZOOMLEVELS: usize = 12;
-const ZOOMSTEP: [f32; ZOOMLEVELS] = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2];
+const ZOOMLEVELS: usize = 14;
+const ZOOMSTEP: [f32; ZOOMLEVELS] = [0.3, 0.33, 0.36, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.9, 1.0];
 const MOVESTEP: f32 = 1.0;
 
 pub struct Camera {
@@ -76,22 +76,14 @@ impl Camera {
     self.maplimx = -((MAPSIZE_MAX_X as f32 * self.tsize) as i32 - self.scrX + (self.tsize) as i32);
     self.maplimy = -((MAPSIZE_MAX_Y as f32 * self.tsize) as i32 - self.scrY + (self.tsize) as i32);
 
-
     self.min_x = x;
     self.min_y = y;
-
     self.movetotile(mx, my);
     true
   }
 
   pub fn movestep(&mut self, x: f32, y: f32) -> bool {
     let p = Point2::new(self.position.x + (x * MOVESTEP ), self.position.y + (y * MOVESTEP ));
-    self.position = self.inbounds_point2(p);
-    true
-  }
-  
-  pub fn moveto(&mut self, x: f32, y: f32) -> bool {
-    let p = Point2::new(x + (self.scrX / 2) as f32, y + (self.scrY / 2) as f32);
     self.position = self.inbounds_point2(p);
     true
   }

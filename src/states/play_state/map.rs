@@ -1,5 +1,5 @@
 use super::{MAPSIZE_MAX_Y, MAPSIZE_MAX_X};
-use super::entities::{Entities, Entity, Tile, Wall};
+use super::entities::{ BuildableEntity, Buildable, Entities, Entity, Tile, Wall};
 use ggez::GameResult;
 use ggez::GameError::ResourceLoadError;
 use noise::{ NoiseFn, Perlin };
@@ -60,7 +60,7 @@ impl Pos { // Pathfinding is expensive :(
 
 pub struct Map {
   pub tilemap: Vec<Tile>,
-  pub build_layer: Vec<Option<Wall>>,
+  pub build_layer: Vec<Option<Box<Buildable>>>,
   pub costmap: Vec<usize>,
 
 }
@@ -68,7 +68,6 @@ pub struct Map {
 impl Map {
   pub fn new() -> Self {
     let mut tilemap = Vec::new();
-//    let mut build_layer = Vec::new();
     let mut build_layer = Vec::new();
     let mut costmap = Vec::new();
     let mut map = Map { tilemap, build_layer, costmap };
@@ -125,27 +124,34 @@ impl Map {
 
   }
 
-  pub fn get_wall_at(&mut self, x: i32, y: i32) -> Option<Wall> {
+  pub fn get_building_at(&mut self, x: i32, y: i32) -> bool {
     if !Map::check_bounds(x, y) {
-      return None;
+      return false;
     }
-    *self.build_layer.get(getmapvecidx(x,y)).unwrap()
+    match self.build_layer.get(getmapvecidx(x,y)).unwrap() {
+      Some(a) => { true }
+      None    => { false }
+    }
+    //let &&mut b = &self.build_layer.get(getmapvecidx(x,y)).as_mut().unwrap();
+//    let c = b.unwrap();
+  //  Some(c)
   }
 
-  pub fn set_wall_at(&mut self, x: i32, y: i32, w: &mut Wall, entities: &mut Entities) -> GameResult<()> {
+  pub fn set_building_at<T: BuildableEntity + Copy + 'static>(&mut self, x: i32, y: i32, w: T, entities: &mut Entities) -> GameResult<()> {
     if !Map::check_bounds(x, y) {
       return Err(ResourceLoadError("Tile out of bounds".to_string()));
     }
     let idx = getmapvecidx(x, y);
     self.costmap.remove(idx);
     self.costmap.insert(idx, w.getmovecost());
-    entities.add_wall(w);
+    let a = Box::new(w);
+    entities.add_building(w);
     self.build_layer.remove(idx);
-    self.build_layer.insert(idx, Some(*w));
+    self.build_layer.insert(idx, Some(a));
     Ok(())
   }
 
-  pub fn clear_wall_at(&mut self, x: i32, y: i32, entities: &mut Entities) -> GameResult<()> {
+  pub fn clear_building_at(&mut self, x: i32, y: i32, entities: &mut Entities) -> GameResult<()> {
     if !Map::check_bounds(x, y) {
       return Err(ResourceLoadError("Tile out of bounds".to_string()));
     }
@@ -153,7 +159,12 @@ impl Map {
     let w = self.build_layer.remove(idx);
     self.build_layer.insert(idx, None);
     self.costmap.remove(idx);
-    entities.remove_wall(&w.unwrap());
+
+    let b = w.unwrap().getentityid();
+
+    entities.remove_building(b); 
+    
+      
     self.costmap.insert(idx, self.get_tile_at(x, y).unwrap().getmovecost()); 
     Ok(())
   }
