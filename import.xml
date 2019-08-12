@@ -3,6 +3,14 @@
 
   <tiles>
     <tile>
+      <name>drysand</name>
+      <location>/terrain/drysand.png</location>
+    </tile>
+    <tile>
+      <name>dirt</name>
+      <location>/terrain/dirt.png</location>
+    </tile>
+    <tile>
       <name>grass0</name>
       <location>/terrain/grass0.png</location>
     </tile>
@@ -15,12 +23,35 @@
       <location>/terrain/grass2.png</location>
     </tile>
     <tile>
+      <name>grass3</name>
+      <location>/terrain/grass3.png</location>
+    </tile>
+    <tile>
+      <name>grass4</name>
+      <location>/terrain/grass4.png</location>
+    </tile>
+    <tile>
+      <name>grass5</name>
+      <location>/terrain/grass5.png</location>
+    </tile>
+    <tile>
       <name>water0</name>
       <location>/terrain/water0.png</location>
     </tile>
+    <tile>
+      <name>water1</name>
+      <location>/terrain/water1.png</location>
+    </tile>
+    <tile>
+      <name>deepwater0</name>
+      <location>/terrain/deepwater0.png</location>
+    </tile>
+    <tile>
+      <name>deepwater1</name>
+      <location>/terrain/deepwater1.png</location>
+    </tile>
   </tiles>
-
-
+ 
   <actors>
     <actor>
       <name>lemmy</name>

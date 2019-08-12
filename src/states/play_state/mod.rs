@@ -14,11 +14,9 @@ use ggez::event::{MouseButton, MouseState};
 
 use crate::states::{Assets, State, Transition};
 
-// Getting stack exhaustion with x=300, y=300
-// Need to figure that out
-const MAPSIZE_MAX_X: i32 = 100;
-const MAPSIZE_MAX_Y: i32 = 100;
-const TILESIZE: i32 = 100; // side length of square pngs
+const MAPSIZE_MAX_X: i32 = 300;
+const MAPSIZE_MAX_Y: i32 = 300;
+const TILESIZE: i32 = 64; // side length of square pngs
 
 pub struct PlayState {
   camera: Camera,
@@ -30,11 +28,11 @@ pub struct PlayState {
 
 impl PlayState {
   pub fn new(ctx: &mut Context, assets: &Assets) -> GameResult<Self> {
-    let mut map = Map::new();
+    let mut map = Map::new(assets);
     let mut camera = Camera::new(ctx);
     let mut input = Input::new();
     let mut entities = Entities::new();
-    let e = Actor::new(assets.get_id("lemmy").unwrap(), MAPSIZE_MAX_X / &2, MAPSIZE_MAX_Y / &2, 1.0);
+    let e = Actor::new(assets.get_id("lemmy".to_string()).unwrap(), MAPSIZE_MAX_X / &2, MAPSIZE_MAX_Y / &2, 1.0);
     entities.add_actor(e);
     Ok( PlayState { camera, input, map, entities } )
   }
@@ -103,8 +101,12 @@ impl State for PlayState {
           ..Default::default()
         };
         match self.map.tilemap.get((x + (y * MAPSIZE_MAX_X)) as usize) {
-          Some(i) => {
+          Some((i, 0)) => {
             assets.draw_image(&i.id, p);
+          }
+          Some((i, x)) => {
+            assets.draw_alt_image(&i.id, (x - 1) as usize, p);
+
           }
           _ => {},
         }

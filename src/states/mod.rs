@@ -1,4 +1,5 @@
 use ggez::{graphics, GameResult, Context, timer};
+use ggez::graphics::spritebatch::SpriteBatch;
 use ggez::event::{EventHandler, MouseState, MouseButton};
 use std::collections::HashMap;
 use std::time::Duration;
@@ -20,10 +21,26 @@ impl DurationExt for Duration {
   }
 }
 
+struct Asset {
+    spritebatch: SpriteBatch,
+    alternates: Vec<SpriteBatch>,
+}
+
+impl Asset {
+  fn new(sprite: SpriteBatch) -> Self {
+    Asset { spritebatch: sprite, alternates: Vec::new() }
+  }
+  
+  fn addalternate(&mut self, sprite: SpriteBatch) {
+    self.alternates.push(sprite);
+  }
+}
+
 pub struct Assets {
-  images: HashMap<u32, graphics::spritebatch::SpriteBatch>,
-  actorimages: HashMap<u32, graphics::spritebatch::SpriteBatch>,
-  buildingimages: HashMap<u32, graphics::spritebatch::SpriteBatch>,
+
+  images: HashMap<u32, Asset>,
+  actorimages: HashMap<u32, Asset>,
+  buildingimages: HashMap<u32, Asset>,
   names: HashMap<String, u32>,
   font: HashMap<String, graphics::Font>,
 }
@@ -40,56 +57,74 @@ impl Assets {
   }
 
   pub fn add_image(&mut self, name: &str, id: &u32, image: graphics::Image) -> GameResult<()> {
-    println!("Adding image: {}", name);
-    self.images.insert(*id, graphics::spritebatch::SpriteBatch::new(image));
+    self.images.insert(*id, Asset::new(SpriteBatch::new(image)));
     self.names.insert(name.to_string(), *id);
     Ok(())
   }
   
+  pub fn add_alt_image(&mut self, id: &u32, image: graphics::Image) -> GameResult<()> {
+    self.images.get_mut(id).unwrap().addalternate(SpriteBatch::new(image));
+    Ok(())
+  }
+
   pub fn add_actor_image(&mut self, name: &str, id: &u32, image: graphics::Image) -> GameResult<()> {
-    self.actorimages.insert(*id, graphics::spritebatch::SpriteBatch::new(image));
+    self.actorimages.insert(*id, Asset::new(SpriteBatch::new(image)));
     self.names.insert(name.to_string(), *id);
     Ok(())
+  }
 
+  pub fn add_actor_alt_image(&mut self, id: &u32, image: graphics::Image) -> GameResult<()> {
+    self.actorimages.get_mut(id).unwrap().addalternate(SpriteBatch::new(image));
+    Ok(())
   }
 
   pub fn add_building_image(&mut self, name: &str, id: &u32, image: graphics::Image) -> GameResult<()> {
-    self.buildingimages.insert(*id, graphics::spritebatch::SpriteBatch::new(image));
+    self.buildingimages.insert(*id, Asset::new(SpriteBatch::new(image)));
     self.names.insert(name.to_string(), *id);
     Ok(())
   }
 
-  pub fn get_image(&self, id: &u32) -> GameResult<&graphics::spritebatch::SpriteBatch> {
+  pub fn get_image(&self, id: &u32) -> GameResult<&SpriteBatch> {
     let img = self.images.get(id);
+    Ok(&img.unwrap().spritebatch)
+  }
+
+  pub fn get_alt_image(&self, id: &u32, altid: usize) -> GameResult<&SpriteBatch> {
+    let img = self.images.get(id).unwrap().alternates.get(altid);
     Ok(img.unwrap())
   }
 
-  pub fn get_actor_image(&self, id: &u32) -> GameResult<&graphics::spritebatch::SpriteBatch> {
+  pub fn get_actor_image(&self, id: &u32) -> GameResult<&SpriteBatch> {
     let img = self.actorimages.get(id);
-    Ok(img.unwrap())
+    Ok(&img.unwrap().spritebatch)
   }
 
-  pub fn get_building_image(&self, id: &u32) -> GameResult<&graphics::spritebatch::SpriteBatch> {
+  pub fn get_building_image(&self, id: &u32) -> GameResult<&SpriteBatch> {
     let img = self.buildingimages.get(id);
-    Ok(img.unwrap())
+    Ok(&img.unwrap().spritebatch)
   }
 
-  pub fn get_id(&self, name: &str) -> GameResult<u32> {
-    let id = self.names.get(name);
+  pub fn get_id(&self, name: String) -> GameResult<u32> {
+    let id = self.names.get(&name);
+    let a = *id.unwrap();
     Ok(*id.unwrap())
 
   }
 
   pub fn draw_image(&mut self, id: &u32, p: graphics::DrawParam) { //
-    self.images.get_mut(id).unwrap().add(p);
+    self.images.get_mut(id).unwrap().spritebatch.add(p);
+  }
+
+  pub fn draw_alt_image(&mut self, id: &u32, alt: usize, p: graphics::DrawParam) {
+    self.images.get_mut(id).unwrap().alternates.get_mut(alt).unwrap().add(p);
   }
 
   pub fn draw_actor_image(&mut self, id: &u32, p: graphics::DrawParam) {
-    self.actorimages.get_mut(id).unwrap().add(p);
+    self.actorimages.get_mut(id).unwrap().spritebatch.add(p);
   }
 
   pub fn draw_building_image(&mut self, id: &u32, p: graphics::DrawParam) {
-    self.buildingimages.get_mut(id).unwrap().add(p);
+    self.buildingimages.get_mut(id).unwrap().spritebatch.add(p);
   }
 
   pub fn add_font(&mut self, name: &str, font: graphics::Font) -> GameResult<()> {
@@ -129,10 +164,6 @@ pub struct StateManager {
   states: Vec<Box<dyn State>>,
 }
 
-enum Importer {
-  Tile { name: String, id: u32, sprite: graphics::Image }
-}
-
 impl StateManager {
   pub fn new(ctx: &mut Context) -> StateManager {
     let mut assets = StateManager::initialize_assets(ctx).unwrap();
@@ -145,39 +176,29 @@ impl StateManager {
     }
   }
 
-// Long term, will want to turn this into an XML reader or something
   fn initialize_assets(ctx: &mut Context) -> GameResult<Assets> {
+    //TODO: Get resources dir, right now dependent on where you're running it from
     let file = File::open("import.xml").unwrap();
     let file = BufReader::new(file);
 
     let mut parser = EventReader::new(file);
 
-    enum Elements {
-      name,
-      location,
-    };
+    enum Elements { name, location, alternate };
 
-    enum SpriteTypes {
-      tile,
-      actor,
-      building,
-    }
+    enum SpriteTypes { tile, actor, building, }
 
-    enum Types {
-      sprite,
-      font,
-    };
+    enum Types { sprite, font, };
 
     struct SpriteStruct {
       pub name: String,
-      pub id: u32,
-      pub sprite: graphics::Image,
+      pub sprite: String,
+      pub altsprites: Vec<String>,
       pub typ: SpriteTypes,
     }
 
     impl SpriteStruct {
-      fn new(name: &String, id: u32, spr: graphics::Image, typ: SpriteTypes) -> Self {
-        SpriteStruct { name: name.to_string(), id, sprite: spr, typ }
+      fn new(name: &String, spr: &String, typ: SpriteTypes) -> Self {
+        SpriteStruct { name: name.to_string(), sprite: spr.to_string(), altsprites: Vec::new(), typ }
       }
     }
 
@@ -191,19 +212,17 @@ impl StateManager {
         FontStruct { name: name.to_string(), font }
       }
     }
-
-
     
     let mut sprtyp = SpriteTypes::tile;
     let mut elm = Elements::name;
     let mut typ = Types::sprite;
-    let mut is = Vec::new(); // Sprite Struct
+    let mut is: Vec<SpriteStruct> = Vec::new(); // Sprite Struct
     let mut fs = Vec::new(); // Font struct
     let mut id: u32 = 0;
 
     let mut name = String::new();
 
-    for e in parser {
+    for e in parser { // XML parsing. Messy, but works
       match e {
         Ok(XmlEvent::Characters(e)) => {
           match elm {
@@ -215,19 +234,30 @@ impl StateManager {
                 Types::sprite => {
                   match sprtyp {
                     SpriteTypes::tile => {
-                      is.push(SpriteStruct::new(&name, id, graphics::Image::new(ctx, e.to_string())?, SpriteTypes::tile));
+                      is.push(SpriteStruct::new(&name, &e.to_string(), SpriteTypes::tile));
                     }
                     SpriteTypes::actor => {
-                      is.push(SpriteStruct::new(&name, id, graphics::Image::new(ctx, e.to_string())?, SpriteTypes::actor));
+                      is.push(SpriteStruct::new(&name, &e.to_string(), SpriteTypes::actor));
                     }
                     SpriteTypes::building => {
-                      is.push(SpriteStruct::new(&name, id, graphics::Image::new(ctx, e.to_string())?, SpriteTypes::building));
+
+                      is.push(SpriteStruct::new(&name, &e.to_string(), SpriteTypes::building));
                     }
                   }
                 }
                 Types::font => {
                   fs.push(FontStruct::new(&name, graphics::Font::new(ctx, e.to_string(), 32)?));
                 }
+              }
+              let id = id + 1;
+            }
+            Elements::alternate => {
+              match typ {
+                Types::sprite => {
+                      is.get_mut((&id - 1) as usize).unwrap().altsprites.push(e.to_string());
+                  }
+                
+                _ => {}
               }
             }
           }
@@ -236,6 +266,7 @@ impl StateManager {
           match name.to_string().as_ref() {
             "location" => { elm = Elements::location; }
             "name" => { elm = Elements::name; }
+            "alternate" => { elm = Elements::alternate; }
             "sprites" => { typ = Types::sprite; }
             "fonts" => { typ = Types::font; }
             "tiles" => { sprtyp = SpriteTypes::tile; }
@@ -254,14 +285,33 @@ impl StateManager {
 
     let mut assets = Assets::new();
 
-    let mut id = 0;
-    for i in is {
+    let mut id1 = 0;
+    let mut id2 = 0;
+    let mut id3 = 0;
+    for mut i in is {
       match i.typ {
-        SpriteTypes::tile => { assets.add_image(&i.name, &id, i.sprite); }
-        SpriteTypes::actor => { assets.add_actor_image(&i.name, &id, i.sprite); }
-        SpriteTypes::building => { assets.add_building_image(&i.name, &id, i.sprite); }
+        SpriteTypes::tile => { 
+          assets.add_image(&i.name, &id1, graphics::Image::new(ctx, &i.sprite).unwrap()); 
+          for j in i.altsprites.iter_mut() {
+            assets.add_alt_image(&id1, graphics::Image::new(ctx, &j).unwrap());
+          }
+          id1 = id1 + 1;
+        }
+        SpriteTypes::actor => { 
+          assets.add_actor_image(&i.name, &id2, graphics::Image::new(ctx, &i.sprite).unwrap());
+          for j in i.altsprites.iter_mut() {
+            // Add alts
+          }
+          id2 = id2 + 1;
+        }
+        SpriteTypes::building => { 
+          assets.add_building_image(&i.name, &id3, graphics::Image::new(ctx, &i.sprite).unwrap()); 
+          for j in i.altsprites.iter_mut() {
+            // Add alts
+          }
+          id3 = id3 + 1;
+        }
       }
-      id = id + 1;
     }
 
     for f in fs {
@@ -337,18 +387,30 @@ impl EventHandler for StateManager {
     };
 
     for (_, (_, spr)) in self.assets.images.iter_mut().enumerate() {
-      graphics::draw_ex(ctx, spr, p)?;
-      spr.clear();
+      graphics::draw_ex(ctx, &spr.spritebatch, p)?;
+      for (_, a) in spr.alternates.iter_mut().enumerate() {
+        graphics::draw_ex(ctx, a, p)?;
+        a.clear();
+      }
+      spr.spritebatch.clear();
     }
 
     for (_, (_, spr)) in self.assets.actorimages.iter_mut().enumerate() {
-      graphics::draw_ex(ctx, spr, p)?;
-      spr.clear();
+      graphics::draw_ex(ctx, &spr.spritebatch, p)?;
+      for (_, a) in spr.alternates.iter_mut().enumerate() {
+        graphics::draw_ex(ctx, a, p)?;
+        a.clear();
+      }
+      spr.spritebatch.clear();
     }
 
     for (_, (_, spr)) in self.assets.buildingimages.iter_mut().enumerate() {
-      graphics::draw_ex(ctx, spr, p)?;
-      spr.clear();
+      graphics::draw_ex(ctx, &spr.spritebatch, p)?;
+      for (_, a) in spr.alternates.iter_mut().enumerate() {
+        graphics::draw_ex(ctx, a, p)?;
+        a.clear();
+      }
+      spr.spritebatch.clear();
     }
 
     graphics::present(ctx);

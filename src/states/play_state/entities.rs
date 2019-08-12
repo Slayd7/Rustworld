@@ -26,6 +26,7 @@ pub trait Entity {
 
 pub struct Tile {
   pub id: u32,
+  pub alt: u32,
   pub scrx: f32,
   pub scry: f32,
   x: i32,
@@ -35,11 +36,12 @@ pub struct Tile {
 
 impl Tile {
   pub fn new(id: u32, x: i32, y: i32, s: f32) -> Self { 
-    Tile { id: id, x: x, y: y,
+    Tile { id: id, alt: 0 as u32, x: x, y: y,
       scrx: (TILESIZE * x) as f32 * s,
       scry: (TILESIZE * y) as f32 * s,
       movecost: 1 as usize,
     } }
+  pub fn setalternate(&mut self, alt: &u32) { self.alt = *alt; }
   pub fn setmovecost(&mut self, cost: usize) { self.movecost = cost; }
   pub fn getmovecost(&self) -> usize { self.movecost }
 }
