@@ -2,6 +2,7 @@
 #![allow(non_camel_case_types)]
 extern crate ggez;
 extern crate rand;
+extern crate xml;
 use ggez::*;
 
 mod states;

@@ -33,8 +33,8 @@ pub struct IntroState {
 
 impl IntroState {
   pub fn new(ctx: &mut Context, assets: &Assets) -> GameResult<Self> {
-    let intro_text = graphics::Text::new(ctx, "Rustworld", assets.get_font("title")?)?;
-    let author_text = graphics::Text::new(ctx, "by Brad Hopper", assets.get_font("normal")?)?;
+    let intro_text = graphics::Text::new(ctx, "Rustworld", assets.get_font("rns")?)?;
+    let author_text = graphics::Text::new(ctx, "by Brad Hopper", assets.get_font("basic")?)?;
 
     Ok(IntroState {
       intro_text,

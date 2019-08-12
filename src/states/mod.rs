@@ -2,6 +2,9 @@ use ggez::{graphics, GameResult, Context, timer};
 use ggez::event::{EventHandler, MouseState, MouseButton};
 use std::collections::HashMap;
 use std::time::Duration;
+use std::fs::File;
+use std::io::BufReader;
+use xml::reader::{EventReader, XmlEvent};
 
 pub mod play_state;
 pub mod intro_state;
@@ -37,6 +40,7 @@ impl Assets {
   }
 
   pub fn add_image(&mut self, name: &str, id: &u32, image: graphics::Image) -> GameResult<()> {
+    println!("Adding image: {}", name);
     self.images.insert(*id, graphics::spritebatch::SpriteBatch::new(image));
     self.names.insert(name.to_string(), *id);
     Ok(())
@@ -125,6 +129,10 @@ pub struct StateManager {
   states: Vec<Box<dyn State>>,
 }
 
+enum Importer {
+  Tile { name: String, id: u32, sprite: graphics::Image }
+}
+
 impl StateManager {
   pub fn new(ctx: &mut Context) -> StateManager {
     let mut assets = StateManager::initialize_assets(ctx).unwrap();
@@ -139,16 +147,126 @@ impl StateManager {
 
 // Long term, will want to turn this into an XML reader or something
   fn initialize_assets(ctx: &mut Context) -> GameResult<Assets> {
-    let mut assets = Assets::new();
-    assets.add_image("grass0", &0, graphics::Image::new(ctx, "/terrain/grass0.png")?)?;
-    assets.add_image("grass1", &1, graphics::Image::new(ctx, "/terrain/grass1.png")?)?;
-    assets.add_image("grass2", &2, graphics::Image::new(ctx, "/terrain/grass2.png")?)?;
-    assets.add_image("water0", &3, graphics::Image::new(ctx, "/terrain/water0.png")?)?;
-    assets.add_actor_image("lemmy", &0, graphics::Image::new(ctx, "/objects/lemmy.png")?)?;
-    assets.add_building_image("wall0", &0, graphics::Image::new(ctx, "/walls/wall0.png")?)?;
+    let file = File::open("import.xml").unwrap();
+    let file = BufReader::new(file);
 
-    assets.add_font("title", graphics::Font::new(ctx, "/fonts/Rust_never_sleeps.ttf", 32)?,)?;
-    assets.add_font("normal", graphics::Font::new(ctx, "/fonts/basic_sans_serif_7.ttf", 18)?,)?;
+    let mut parser = EventReader::new(file);
+
+    enum Elements {
+      name,
+      location,
+    };
+
+    enum SpriteTypes {
+      tile,
+      actor,
+      building,
+    }
+
+    enum Types {
+      sprite,
+      font,
+    };
+
+    struct SpriteStruct {
+      pub name: String,
+      pub id: u32,
+      pub sprite: graphics::Image,
+      pub typ: SpriteTypes,
+    }
+
+    impl SpriteStruct {
+      fn new(name: &String, id: u32, spr: graphics::Image, typ: SpriteTypes) -> Self {
+        SpriteStruct { name: name.to_string(), id, sprite: spr, typ }
+      }
+    }
+
+    struct FontStruct {
+      pub name: String,
+      pub font: graphics::Font,
+    }
+
+    impl FontStruct {
+      fn new(name: &String, font: graphics::Font) -> Self {
+        FontStruct { name: name.to_string(), font }
+      }
+    }
+
+
+    
+    let mut sprtyp = SpriteTypes::tile;
+    let mut elm = Elements::name;
+    let mut typ = Types::sprite;
+    let mut is = Vec::new(); // Sprite Struct
+    let mut fs = Vec::new(); // Font struct
+    let mut id: u32 = 0;
+
+    let mut name = String::new();
+
+    for e in parser {
+      match e {
+        Ok(XmlEvent::Characters(e)) => {
+          match elm {
+            Elements::name => {
+              name = e.to_string();
+            }
+            Elements::location => {
+              match typ {
+                Types::sprite => {
+                  match sprtyp {
+                    SpriteTypes::tile => {
+                      is.push(SpriteStruct::new(&name, id, graphics::Image::new(ctx, e.to_string())?, SpriteTypes::tile));
+                    }
+                    SpriteTypes::actor => {
+                      is.push(SpriteStruct::new(&name, id, graphics::Image::new(ctx, e.to_string())?, SpriteTypes::actor));
+                    }
+                    SpriteTypes::building => {
+                      is.push(SpriteStruct::new(&name, id, graphics::Image::new(ctx, e.to_string())?, SpriteTypes::building));
+                    }
+                  }
+                }
+                Types::font => {
+                  fs.push(FontStruct::new(&name, graphics::Font::new(ctx, e.to_string(), 32)?));
+                }
+              }
+            }
+          }
+        }
+        Ok(XmlEvent::StartElement { name, .. }) => {
+          match name.to_string().as_ref() {
+            "location" => { elm = Elements::location; }
+            "name" => { elm = Elements::name; }
+            "sprites" => { typ = Types::sprite; }
+            "fonts" => { typ = Types::font; }
+            "tiles" => { sprtyp = SpriteTypes::tile; }
+            "actors" => { sprtyp = SpriteTypes::actor; }
+            "buildings" => { sprtyp = SpriteTypes::building; }
+            _ => { }
+          }
+        }
+        Err(e) => {
+          println!("Error: {}", e);
+          break;
+        }
+        _ => {}
+      }
+    }
+
+    let mut assets = Assets::new();
+
+    let mut id = 0;
+    for i in is {
+      match i.typ {
+        SpriteTypes::tile => { assets.add_image(&i.name, &id, i.sprite); }
+        SpriteTypes::actor => { assets.add_actor_image(&i.name, &id, i.sprite); }
+        SpriteTypes::building => { assets.add_building_image(&i.name, &id, i.sprite); }
+      }
+      id = id + 1;
+    }
+
+    for f in fs {
+      assets.add_font(&f.name, f.font);
+    }
     Ok(assets)
   }
 

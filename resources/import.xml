@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sprites>
+
+  <tiles>
+    <tile>
+      <name>grass0</name>
+      <sprite>/terrain/grass0.png</sprite>
+    </tile>
+    <tile>
+      <name>grass1</name>
+      <sprite>/terrain/grass1.png</sprite>
+    </tile>
+    <tile>
+      <name>grass2</name>
+      <sprite>/terrain/grass2.png</sprite>
+    </tile>
+    <tile>
+      <name>water0</name>
+      <sprite>/terrain/water0.png</sprite>
+    </tile>
+  </tiles>
+
+
+  <actors>
+    <actor>
+      <name>lemmy</name>
+      <sprite>/objects/lemmy.png</sprite>
+    </actor>
+  </actors>
+
+  <buildings>
+    <structures>
+      <wall>
+        <name>wall0</name>
+        <sprite>/walls/wall0.png</sprite>
+      </wall>
+    </structures>
+  </buildings>
+
+</sprites>
+
+<fonts>
+  <font>
+    <name>rns</name>
+    <location>/fonts/Rust_never_sleeps.ttf</location>
+  </font>
+  <font>
+    <name>basic</name>
+    <location>/fonts/basic_sans_serif_7.ttf</location>
+  </font>
+</fonts>
