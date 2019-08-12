@@ -4,19 +4,19 @@
   <tiles>
     <tile>
       <name>grass0</name>
-      <sprite>/terrain/grass0.png</sprite>
+      <location>/terrain/grass0.png</location>
     </tile>
     <tile>
       <name>grass1</name>
-      <sprite>/terrain/grass1.png</sprite>
+      <location>/terrain/grass1.png</location>
     </tile>
     <tile>
       <name>grass2</name>
-      <sprite>/terrain/grass2.png</sprite>
+      <location>/terrain/grass2.png</location>
     </tile>
     <tile>
       <name>water0</name>
-      <sprite>/terrain/water0.png</sprite>
+      <location>/terrain/water0.png</location>
     </tile>
   </tiles>
 
@@ -24,7 +24,7 @@
   <actors>
     <actor>
       <name>lemmy</name>
-      <sprite>/objects/lemmy.png</sprite>
+      <location>/objects/lemmy.png</location>
     </actor>
   </actors>
 
@@ -32,7 +32,7 @@
     <structures>
       <wall>
         <name>wall0</name>
-        <sprite>/walls/wall0.png</sprite>
+        <location>/walls/wall0.png</location>
       </wall>
     </structures>
   </buildings>
