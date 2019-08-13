@@ -346,13 +346,3 @@ impl Entities {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_normalize() {
-        let a = Entities::normalize(5555, 0);
-        assert_eq!(a, (1.0, 0.0));
-    }
-}
