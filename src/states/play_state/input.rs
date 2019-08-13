@@ -56,43 +56,43 @@ impl Input {
             3 => self.mouse3down = false,
             _ => {}
         }
-    }/*
+    } /*
 
-    pub fn mwheel(&mut self, dir: f32) {
-        self.mwheeldelta = dir;
-    }
+      pub fn mwheel(&mut self, dir: f32) {
+          self.mwheeldelta = dir;
+      }
 
-    pub fn getmwheeld(&mut self) -> f32 {
-        let m = self.mwheeldelta;
-        self.mwheeldelta = 0.0;
-        m
-    }
+      pub fn getmwheeld(&mut self) -> f32 {
+          let m = self.mwheeldelta;
+          self.mwheeldelta = 0.0;
+          m
+      }
 
-    pub fn getmouse1(&mut self) -> bool {
-        self.mouse1down
-    }
-    pub fn getmouse2(&mut self) -> bool {
-        self.mouse2down
-    }
-    pub fn getmouse3(&mut self) -> bool {
-        self.mouse3down
-    }
+      pub fn getmouse1(&mut self) -> bool {
+          self.mouse1down
+      }
+      pub fn getmouse2(&mut self) -> bool {
+          self.mouse2down
+      }
+      pub fn getmouse3(&mut self) -> bool {
+          self.mouse3down
+      }
 
-    pub fn getxdelta(&mut self) -> i32 {
-        let XD = self.xdelta;
-        self.xdelta = 0;
-        XD
-    }
+      pub fn getxdelta(&mut self) -> i32 {
+          let XD = self.xdelta;
+          self.xdelta = 0;
+          XD
+      }
 
-    pub fn getydelta(&mut self) -> i32 {
-        let yd = self.ydelta;
-        self.ydelta = 0;
-        yd
-    }
+      pub fn getydelta(&mut self) -> i32 {
+          let yd = self.ydelta;
+          self.ydelta = 0;
+          yd
+      }
 
-    pub fn getpos(&mut self) -> (i32, i32) {
-        (self.x, self.y)
-    }*/
+      pub fn getpos(&mut self) -> (i32, i32) {
+          (self.x, self.y)
+      }*/
 
     pub fn setpos(&mut self, x: i32, y: i32) {
         self.xdelta = self.x - x;

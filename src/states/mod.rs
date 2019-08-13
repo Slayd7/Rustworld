@@ -83,15 +83,15 @@ impl Assets {
         self.names.insert(name.to_string(), *id);
         Ok(())
     }
-/*
-    pub fn add_actor_alt_image(&mut self, id: &u32, image: graphics::Image) -> GameResult<()> {
-        self.actorimages
-            .get_mut(id)
-            .unwrap()
-            .addalternate(SpriteBatch::new(image));
-        Ok(())
-    }
-*/
+    /*
+        pub fn add_actor_alt_image(&mut self, id: &u32, image: graphics::Image) -> GameResult<()> {
+            self.actorimages
+                .get_mut(id)
+                .unwrap()
+                .addalternate(SpriteBatch::new(image));
+            Ok(())
+        }
+    */
     pub fn add_building_image(
         &mut self,
         name: &str,
@@ -103,7 +103,7 @@ impl Assets {
         self.names.insert(name.to_string(), *id);
         Ok(())
     }
-/*
+    /*
     pub fn get_image(&self, id: &u32) -> GameResult<&SpriteBatch> {
         let img = self.images.get(id);
         Ok(&img.unwrap().spritebatch)
@@ -157,7 +157,7 @@ impl Assets {
         Ok(())
     }
 
-   pub fn get_font(&self, name: &str) -> GameResult<&graphics::Font> {
+    pub fn get_font(&self, name: &str) -> GameResult<&graphics::Font> {
         let font = self.font.get(name);
         Ok(font.unwrap())
     }
@@ -167,7 +167,7 @@ pub enum Transition {
     None,
     //Push(Box<dyn State>),
     Swap(Box<dyn State>),
-    //Pop,    
+    //Pop,
     //Drain,  // Not yet used, commenting out for now
 }
 
@@ -390,29 +390,37 @@ impl StateManager {
         for mut i in is {
             match i.typ {
                 SpriteTypes::tile => {
-                    assets.add_image(&i.name, &id1, graphics::Image::new(ctx, &i.sprite).unwrap()).unwrap();
+                    assets
+                        .add_image(&i.name, &id1, graphics::Image::new(ctx, &i.sprite).unwrap())
+                        .unwrap();
                     for j in i.altsprites.iter_mut() {
-                        assets.add_alt_image(&id1, graphics::Image::new(ctx, &j).unwrap()).unwrap();
+                        assets
+                            .add_alt_image(&id1, graphics::Image::new(ctx, &j).unwrap())
+                            .unwrap();
                     }
                     id1 = id1 + 1;
                 }
                 SpriteTypes::actor => {
-                    assets.add_actor_image(
-                        &i.name,
-                        &id2,
-                        graphics::Image::new(ctx, &i.sprite).unwrap(),
-                    ).unwrap();
+                    assets
+                        .add_actor_image(
+                            &i.name,
+                            &id2,
+                            graphics::Image::new(ctx, &i.sprite).unwrap(),
+                        )
+                        .unwrap();
                     for _j in i.altsprites.iter_mut() {
                         // Add alts
                     }
                     id2 = id2 + 1;
                 }
                 SpriteTypes::building => {
-                    assets.add_building_image(
-                        &i.name,
-                        &id3,
-                        graphics::Image::new(ctx, &i.sprite).unwrap(),
-                    ).unwrap();
+                    assets
+                        .add_building_image(
+                            &i.name,
+                            &id3,
+                            graphics::Image::new(ctx, &i.sprite).unwrap(),
+                        )
+                        .unwrap();
                     for _j in i.altsprites.iter_mut() {
                         // Add alts
                     }
@@ -426,7 +434,7 @@ impl StateManager {
         }
         Ok(assets)
     }
-/*
+    /*
     pub fn quit(&mut self) {
         self.states.clear();
         self.running = false
@@ -441,14 +449,14 @@ impl StateManager {
             //Transition::Drain => self.drain(),
         }
     }
-/*
-    fn pop(&mut self) {
-        self.states.pop();
-        if self.states.is_empty() {
-            self.quit();
+    /*
+        fn pop(&mut self) {
+            self.states.pop();
+            if self.states.is_empty() {
+                self.quit();
+            }
         }
-    }
-*/
+    */
     fn push(&mut self, boxed_state: Box<dyn State>) {
         self.states.push(boxed_state)
     }
@@ -457,7 +465,7 @@ impl StateManager {
         self.states.clear();
         self.push(boxed_state);
     }
-/*
+    /*
     fn drain(&mut self) {
         self.states.clear();
         self.quit();

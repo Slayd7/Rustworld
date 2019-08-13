@@ -95,7 +95,13 @@ impl State for IntroState {
         Ok(())
     }
 
-    fn mouse_button_down_event(&mut self, _ctx: &mut Context, _button: MouseButton, _x: i32, _y: i32) {
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        _button: MouseButton,
+        _x: i32,
+        _y: i32,
+    ) {
         self.handle_input();
     }
 }

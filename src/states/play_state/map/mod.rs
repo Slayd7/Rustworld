@@ -42,7 +42,7 @@ impl Map {
         Ok(self.tilemap.get(getmapvecidx(x, y)).unwrap())
     }
 
-/*    pub fn set_tile_at(&mut self, x: i32, y: i32, t: Tile) -> GameResult<()> {
+    /*    pub fn set_tile_at(&mut self, x: i32, y: i32, t: Tile) -> GameResult<()> {
         if !Map::check_bounds(x, y) {
             return Err(ResourceLoadError("Tile out of bounds".to_string()));
         }
@@ -51,7 +51,8 @@ impl Map {
         let a = &t.alt.clone();
         self.tilemap.insert(idx, (t, *a));
         Ok(())
-    }*/ // UNUSED FOR NOW
+    }*/
+    // UNUSED FOR NOW
 
     pub fn get_building_at(&mut self, x: i32, y: i32) -> bool {
         if !Map::check_bounds(x, y) {

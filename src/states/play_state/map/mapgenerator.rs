@@ -7,7 +7,7 @@ enum TileType {
     Water,
     Sand,
     Grass,
-//    Rock,
+    //    Rock,
 }
 
 impl MapGenerator {
@@ -34,7 +34,7 @@ impl MapGenerator {
             x if x.in_range(0.08, 0.2) => m = TileType::Sand,   // Grass
             x if x.in_range(0.5, 0.8) => m = TileType::Grass,   // Grass
             x if x.in_range(0.8, 1.0) => m = TileType::Grass,   //Rock, // TODO
-            _ => m = TileType::Grass,           //Rock,
+            _ => m = TileType::Grass,                           //Rock,
         }
         m
     }
@@ -143,8 +143,7 @@ impl MapGenerator {
                         }
                         _ => {}
                     },
-
-//                    TileType::Rock => {}
+                    //                    TileType::Rock => {}
                 }
                 let mut t = Tile::new(id, x, y, 1.0);
                 let alt = 0 as u32;
@@ -163,12 +162,12 @@ impl MapGenerator {
         }
     }
 }
-    trait InRange {
-      fn in_range(&self, begin: Self, end: Self) -> bool;
-    }
+trait InRange {
+    fn in_range(&self, begin: Self, end: Self) -> bool;
+}
 
-    impl InRange for f64 {
-      fn in_range(&self, begin: f64, end: f64) -> bool {
+impl InRange for f64 {
+    fn in_range(&self, begin: f64, end: f64) -> bool {
         *self >= begin && *self < end
-      }
     }
+}

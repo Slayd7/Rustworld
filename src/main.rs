@@ -1,9 +1,11 @@
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
+
 extern crate ggez;
 extern crate rand;
 extern crate xml;
 use ggez::*;
+
 
 mod states;
 use crate::states::StateManager;

@@ -16,7 +16,7 @@ pub trait Entity {
         let (x, y) = self.getposition();
         let p = DrawParam {
             dest: Point2::new(camx as f32 + (x * scale.x), camy as f32 + (y * scale.y)),
-            scale: scale,
+            scale,
             rotation: self.getrotation(),
             ..Default::default()
         };
@@ -37,18 +37,18 @@ pub struct Tile {
 impl Tile {
     pub fn new(id: u32, x: i32, y: i32, s: f32) -> Self {
         Tile {
-            id: id,
+            id,
             alt: 0 as u32,
-            x: x,
-            y: y,
+            x,
+            y,
             scrx: (TILESIZE * x) as f32 * s,
             scry: (TILESIZE * y) as f32 * s,
             movecost: 1 as usize,
         }
-    }/*
-    pub fn setalternate(&mut self, alt: &u32) {
-        self.alt = *alt;
-    }*/
+    } /*
+      pub fn setalternate(&mut self, alt: &u32) {
+          self.alt = *alt;
+      }*/
     pub fn setmovecost(&mut self, cost: usize) {
         self.movecost = cost;
     }
@@ -100,9 +100,9 @@ pub struct Wall {
 impl Wall {
     pub fn new(id: u32, x: i32, y: i32, s: f32, e: u64) -> Self {
         Wall {
-            id: id,
-            x: x,
-            y: y,
+            id,
+            x,
+            y,
             scrx: (TILESIZE * x) as f32 * s,
             scry: (TILESIZE * y) as f32 * s,
             rotation: 0.0,
@@ -188,11 +188,11 @@ impl Actor {
         let m = false;
         let st = Vec::new();
         Actor {
-            id: id,
-            scrx: scrx,
-            scry: scry,
-            x: x,
-            y: y,
+            id,
+            scrx,
+            scry,
+            x,
+            y,
             speed: s,
             moving: m,
             steps: st,
@@ -290,7 +290,7 @@ impl Entities {
         self.entityindex
     }
 
-/*
+    /*
     pub fn add_tile(&mut self, tile: Tile) {
         self.tiles.push(tile);
     }
@@ -345,4 +345,3 @@ impl Entities {
         }
     }
 }
-
