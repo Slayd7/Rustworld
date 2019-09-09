@@ -38,8 +38,8 @@ impl PlayState {
   }
 
   pub fn scr_to_map(&self, x: i32, y: i32) -> (i32, i32) {
-    let mut tx: i32 = -self.camera.position.x as i32;
-    let mut ty: i32 = -self.camera.position.y as i32;
+    let mut tx: i32 = self.camera.position.x as i32;
+    let mut ty: i32 = self.camera.position.y as i32;
     let mut mx = x;
     let mut my = y;
     
@@ -56,14 +56,14 @@ impl PlayState {
 
   pub fn map_to_scr(&mut self, x: i32, y: i32) -> (i32, i32)
   {
-    let mut tx: i32 = -self.camera.position.x as i32;
-    let mut ty: i32 = -self.camera.position.y as i32;
+    let mut tx: i32 = self.camera.position.x as i32;
+    let mut ty: i32 = self.camera.position.y as i32;
     let mut mx = x;
     let mut my = y;
     
     let scale: i32 = (TILESIZE as f32 * self.camera.zoomlevel).ceil() as i32;
 
-    ((mx * scale) - tx, (my * scale) - ty)
+    ((mx * scale) + tx, (my * scale) + ty)
   }
 
 }
@@ -80,14 +80,14 @@ impl State for PlayState {
     let camy = self.camera.position.y;
     let tsize = TILESIZE as f32 * self.camera.zoomlevel;
 
-    let mut xdrawmin = ((-camx / tsize) - 1.0) as i32;
+    let mut xdrawmin = ((camx / tsize) - 1.0) as i32;
     if xdrawmin < 0 { xdrawmin = 0; }
-    let mut xdrawmax = ((-camx / tsize) + 1.0 + (ctx.conf.window_mode.width as f32 / tsize)) as i32;
+    let mut xdrawmax = ((camx / tsize) + 1.0 + (ctx.conf.window_mode.width as f32 / tsize)) as i32;
     if xdrawmax >= MAPSIZE_MAX_X { xdrawmax = MAPSIZE_MAX_X ; }
 
-    let mut ydrawmin = ((-camy / tsize) - 1.0) as i32;
+    let mut ydrawmin = ((camy / tsize) - 1.0) as i32;
     if ydrawmin < 0 { ydrawmin = 0; }
-    let mut ydrawmax = ((-camy / tsize) + 1.0 + (ctx.conf.window_mode.height as f32 / tsize)) as i32;
+    let mut ydrawmax = ((camy / tsize) + 1.0 + (ctx.conf.window_mode.height as f32 / tsize)) as i32;
     if ydrawmax >= MAPSIZE_MAX_Y { ydrawmax = MAPSIZE_MAX_Y ; }
 
     for x in xdrawmin..xdrawmax {
@@ -95,8 +95,8 @@ impl State for PlayState {
 
         let p = graphics::DrawParam {
           dest: Point2::new(
-                ((x * TILESIZE) as f32 * self.camera.zoomlevel) + camx as f32, 
-                ((y * TILESIZE) as f32 * self.camera.zoomlevel) + camy as f32),
+                ((x * TILESIZE) as f32 * self.camera.zoomlevel) - camx as f32, 
+                ((y * TILESIZE) as f32 * self.camera.zoomlevel) - camy as f32),
           scale: scale,
           ..Default::default()
         };
@@ -154,7 +154,7 @@ impl State for PlayState {
 
   fn mouse_motion_event(&mut self, ctx: &mut Context, m_state: MouseState, x: i32, y: i32, dx: i32, dy: i32) {
     if m_state.middle() {
-      self.camera.movestep(dx as f32, dy as f32);
+      self.camera.movestep(-dx as f32, -dy as f32);
     }
     self.input.setpos(x, y);
   }

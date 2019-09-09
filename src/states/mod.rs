@@ -1,4 +1,4 @@
-use ggez::{graphics, GameResult, Context, timer};
+use ggez::{graphics, GameResult, Context, timer, nalgebra as na};
 use ggez::graphics::spritebatch::SpriteBatch;
 use ggez::event::{EventHandler, MouseState, MouseButton};
 use std::collections::HashMap;
@@ -43,6 +43,7 @@ pub struct Assets {
   buildingimages: HashMap<u32, Asset>,
   names: HashMap<String, u32>,
   font: HashMap<String, graphics::Font>,
+  lines: Vec<((f32, f32), (f32, f32))>,
 }
 
 impl Assets {
@@ -53,6 +54,7 @@ impl Assets {
       buildingimages: HashMap::new(),
       names: HashMap::new(),
       font: HashMap::new(),
+      lines: Vec::new(),
     }
   }
 
@@ -125,6 +127,10 @@ impl Assets {
 
   pub fn draw_building_image(&mut self, id: &u32, p: graphics::DrawParam) {
     self.buildingimages.get_mut(id).unwrap().spritebatch.add(p);
+  }
+
+  pub fn draw_UI_line(&mut self, line: ((f32, f32), (f32, f32))) {
+    self.lines.push(line);
   }
 
   pub fn add_font(&mut self, name: &str, font: graphics::Font) -> GameResult<()> {
@@ -412,6 +418,13 @@ impl EventHandler for StateManager {
       }
       spr.spritebatch.clear();
     }
+
+    for l in self.assets.lines.iter_mut() {
+      let p1 = na::Point2::new((l.0).0, (l.0).1);
+      let p2 = na::Point2::new((l.1).0, (l.1).1);
+      graphics::line(ctx, &[p1, p2], 1.0)?;
+    }
+    self.assets.lines.clear();
 
     graphics::present(ctx);
     timer::sleep(Duration::from_secs(0));

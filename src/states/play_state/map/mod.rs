@@ -5,7 +5,7 @@ use ggez::GameError::ResourceLoadError;
 use noise::{ NoiseFn, Perlin };
 use noise::Seedable;
 use pathfinding::grid::Grid;
-use pathfinding::prelude::dijkstra;
+use pathfinding::prelude::{absdiff, astar};
 use std::time::SystemTime;
 
 mod mapgenerator;
@@ -30,7 +30,7 @@ impl Map {
   }
 
   pub fn getpath(&mut self, from: Pos, to: Pos) -> GameResult<Vec<Pos>> {
-    let result = dijkstra(&from, |p| p.successors(&self.costmap), |p| *p == to);
+    let result = astar(&from, |p| p.successors(&self.costmap), |p| p.distance(&to) / 3, |p| *p == to);
     match result {
       Some((result, weight)) => { Ok(result) },
       None => { Err(ggez::GameError::UnknownError("No path found".to_string())) },
@@ -114,32 +114,18 @@ pub fn getmapvecidx(x: i32, y: i32) -> usize { (x + (MAPSIZE_MAX_X * y)) as usiz
 pub struct Pos(pub i32, pub i32);
 
 impl Pos { // Pathfinding is expensive :(
+  fn distance(&self, other: &Pos) -> usize {
+    (absdiff(self.0, other.0) + absdiff(self.1, other.1)) as usize
+  }
   fn successors(&self, costmap: &Vec<usize>) -> Vec<(Pos, usize)> {
     let &Pos(x, y) = self;
     let mut cost: usize = usize::min_value();
     let mut ret: Vec<(Pos, usize)> = Vec::new();
     if x > 0 {
-      if y > 0 {
-        cost = *costmap.get((x-1 + ((y-1) * MAPSIZE_MAX_Y)) as usize).unwrap();
-        // Impassible?
-        if cost < usize::max_value() { ret.push((Pos(x-1, y-1), cost)); }
-      }
-      if y < (MAPSIZE_MAX_Y - 1) {
-        cost = *costmap.get((x-1 + ((y+1) * MAPSIZE_MAX_Y)) as usize).unwrap();
-        if cost < usize::max_value() { ret.push((Pos(x-1, y+1), cost)); }
-      }
       cost = *costmap.get((x-1 + ((y) * MAPSIZE_MAX_Y)) as usize).unwrap();
       if cost < usize::max_value() { ret.push((Pos(x-1, y),  cost)); }
     }
     if x < (MAPSIZE_MAX_X - 1) {
-      if y > 0 {
-        cost = *costmap.get((x+1 + ((y-1) * MAPSIZE_MAX_Y)) as usize).unwrap();
-        if cost < usize::max_value() { ret.push((Pos(x+1, y-1),  cost)); }
-      }
-      if y < (MAPSIZE_MAX_Y - 1) {
-        cost = *costmap.get((x+1 + ((y+1) * MAPSIZE_MAX_Y)) as usize).unwrap();
-        if cost < usize::max_value() { ret.push((Pos(x+1, y+1),  cost)); }
-      }
       cost = *costmap.get((x+1 + ((y) * MAPSIZE_MAX_Y)) as usize).unwrap();
       if cost < usize::max_value() { ret.push((Pos(x+1, y),  cost)); }
     }

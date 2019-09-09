@@ -1,9 +1,11 @@
-use super::TILESIZE;
+use super::{TILESIZE, MAPSIZE_MAX_X} ;
 use super::camera::Camera;
 use crate::states::Assets;
-use ggez::graphics::{ DrawParam, Point2 };
+use ggez::graphics::*;
+use ggez::graphics::line;
 use super::map::{Pos, Map};
 use std::collections::HashMap;
+use bresenham::Bresenham;
 
 pub trait BuildableEntity: Buildable + Entity {}
 
@@ -15,7 +17,7 @@ pub trait Entity {
   fn getdrawparams(&self, camx: f32, camy: f32, scale: Point2) -> DrawParam { 
     let (x, y) = self.getposition();
     let p = DrawParam {
-      dest: Point2::new(camx as f32 + (x * scale.x), camy as f32 + (y * scale.y)),
+      dest: Point2::new(-camx as f32 + (x * scale.x ), -camy as f32 + (y * scale.y )),
       scale: scale,
       rotation: self.getrotation(),
       ..Default::default()
@@ -160,6 +162,26 @@ impl Actor {
 
   }
 
+  pub fn lineofsight_vis(&mut self, x: i32, y: i32, map: &mut Map) -> bool {
+    for (x, y) in Bresenham::new((self.x as isize, self.y as isize), (x as isize, y as isize)) {
+      
+      
+
+    }
+    true
+  }
+
+  pub fn lineofsight_mov(x1: i32, y1: i32, x: i32, y: i32, costmap: &mut Vec<usize>) -> bool {
+    for (x, y) in Bresenham::new((x1 as isize, y1 as isize), (x as isize, y as isize)) {
+      match costmap.get((x + (y * MAPSIZE_MAX_X as isize)) as usize) {
+        Some(&a) => { if a == usize::max_value() { return false } }
+        _ => { return false }
+      }
+    }
+    true
+
+  }
+
 
   /// Interprets grid tiles in x, y into map pixel coordinates and moves one step towards it
   fn movestep(&mut self, x: i32, y: i32, deltaT: u32) -> bool {
@@ -195,16 +217,42 @@ impl Actor {
 /// Set move target for actor in grid tiles (x, y)
   pub fn setmovetarget(&mut self, x: i32, y: i32, cam: &mut Camera, map: &mut Map) -> bool {
     if self.x == x && self.y == y { return false; }
-    let steps = map.getpath(Pos(self.x, self.y), Pos(x, y));
+    let mut steps;
+    if self.moving {
+      let i = self.steps[0];
+      steps = map.getpath(Pos(i.0, i.1), Pos(x, y));
+    } else {
+      steps = map.getpath(Pos(self.x, self.y), Pos(x, y));
+    }
+    
     match steps {
       Ok(mut steps) => {
         self.steps.clear();
         self.moving = true;
+        let mut j = 0;
+        let mut i = (self.x, self.y);
+        let mut x1 = steps[0].0;
+        let mut y1 = steps[0].1;
         steps.remove(0);
+        
         for s in steps {
           let Pos(x, y) = s;
-          self.steps.push((x, y));
+          if Actor::lineofsight_mov(x1, y1, x, y, &mut map.costmap){
+            i = (x, y);
+          } else {
+            self.steps.push(i);
+            x1 = i.0;
+            y1 = i.1;
+          }
+          j = j + 1;
+          if j % 5 == 0 {
+            self.steps.push(i);
+            x1 = i.0;
+            y1 = i.1;
+          }
         }
+        
+        self.steps.push((x, y));
         true
         }
       Err(e) => { false },
@@ -217,17 +265,34 @@ impl Actor {
   }
 }
 
+struct UI {
+  lines: Vec<((f32, f32), (f32, f32))>,
+}
+
+impl UI {
+  pub fn new() -> Self {
+    UI { lines: Vec::new(), }
+  }
+  pub fn addline(&mut self, x1: f32, y1: f32, x2: f32, y2: f32) {
+    self.lines.push(((x1, y1), (x2, y2)));
+  }
+  pub fn clearlines(&mut self) {
+    self.lines.clear();
+  }
+}
+
 pub struct Entities {
   tiles: Vec<Tile>,
   buildings: HashMap<u64, Box<BuildableEntity>>,
   actors: Vec<Actor>,
   entityindex: u64,
+  UI: UI,
 }
 
 impl Entities {
   pub fn new() -> Self {
     let mut e: u64 = 0;
-    Entities { tiles: Vec::new(), buildings: HashMap::new(), actors: Vec::new(), entityindex: e, }
+    Entities { tiles: Vec::new(), buildings: HashMap::new(), actors: Vec::new(), entityindex: e, UI: UI::new(), }
   }
 
   pub fn getindex(&self) -> u64 { self.entityindex }
@@ -271,6 +336,8 @@ impl Entities {
   }
   
   pub fn draw(&mut self, camx: i32, camy: i32, scale: Point2, assets: &mut Assets) {
+    let lineoffsetx = (TILESIZE / 2) as f32 * scale.x;
+    let lineoffsety = (TILESIZE / 2) as f32 * scale.y;
     for v in self.tiles.iter_mut() {
       let p = &v.getdrawparams(camx as f32, camy as f32, scale);
       assets.draw_image(&v.id, *p);
@@ -282,8 +349,25 @@ impl Entities {
     }
     for v in self.actors.iter_mut() {
       let p = &v.getdrawparams(camx as f32, camy as f32, scale);
+      if v.moving {
+        let mut p1 = v.getposition();
+        p1 = (((p1.0 * scale.x) - camx as f32) + lineoffsetx,
+              ((p1.1 * scale.y) - camy as f32) + lineoffsety);
+        let mut p2 = (0.0, 0.0);
+        for s in v.steps.iter_mut() {
+          p2 = ((((s.0 * TILESIZE ) as f32 * scale.x) - camx as f32) + lineoffsetx, (((s.1 * TILESIZE) as f32 * scale.y) - camy as f32) + lineoffsety);
+          assets.draw_UI_line((p1, p2));
+          p1 = p2;
+          
+
+        }
+
+      }
       assets.draw_actor_image(&v.id, *p);
     } 
+    for v in self.UI.lines.iter_mut() {
+      assets.draw_UI_line(*v);
+    }
   }
 }
 
