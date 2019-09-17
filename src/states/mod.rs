@@ -1,4 +1,5 @@
 use ggez::{graphics, GameResult, Context, timer, nalgebra as na};
+use ggez::graphics::Drawable;
 use ggez::graphics::spritebatch::SpriteBatch;
 use ggez::event::{EventHandler, MouseState, MouseButton};
 use std::collections::HashMap;
@@ -37,7 +38,6 @@ impl Asset {
 }
 
 pub struct Assets {
-
   images: HashMap<u32, Asset>,
   actorimages: HashMap<u32, Asset>,
   buildingimages: HashMap<u32, Asset>,
@@ -59,7 +59,10 @@ impl Assets {
   }
 
   pub fn add_image(&mut self, name: &str, id: &u32, image: graphics::Image) -> GameResult<()> {
-    self.images.insert(*id, Asset::new(SpriteBatch::new(image)));
+    let mut sb = SpriteBatch::new(image);
+    sb.set_blend_mode(Some(graphics::BlendMode::Alpha));
+    let a = Asset::new(sb);
+    self.images.insert(*id, a);
     self.names.insert(name.to_string(), *id);
     Ok(())
   }
@@ -392,6 +395,7 @@ impl EventHandler for StateManager {
       ..Default::default()
     };
 
+    // Tiles
     for (_, (_, spr)) in self.assets.images.iter_mut().enumerate() {
       graphics::draw_ex(ctx, &spr.spritebatch, p)?;
       for (_, a) in spr.alternates.iter_mut().enumerate() {

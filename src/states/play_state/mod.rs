@@ -95,9 +95,9 @@ impl State for PlayState {
 
         let p = graphics::DrawParam {
           dest: Point2::new(
-                ((x * TILESIZE) as f32 * self.camera.zoomlevel) - camx as f32, 
-                ((y * TILESIZE) as f32 * self.camera.zoomlevel) - camy as f32),
-          scale: scale,
+                (((x * TILESIZE) - 5) as f32 * self.camera.zoomlevel) - camx as f32, 
+                (((y * TILESIZE) - 5) as f32 * self.camera.zoomlevel) - camy as f32),
+          scale: scale,// * 1.1,
           ..Default::default()
         };
         match self.map.tilemap.get((x + (y * MAPSIZE_MAX_X)) as usize) {

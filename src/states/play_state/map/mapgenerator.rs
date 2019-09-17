@@ -51,9 +51,8 @@ impl MapGenerator {
     let mut moisture = Perlin::new();
     let mut moisture = moisture.set_seed(seed + 1);
 
-//    let mut 
 
-    for x in 0..MAPSIZE_MAX_X {
+    for x in 0..MAPSIZE_MAX_X { // Tile gen
       for y in 0..MAPSIZE_MAX_Y {
         let mut val: f64 = elevation.get([x as f64 * NOISESCALE, y as f64 * NOISESCALE]);
         val = val + (0.5 * elevation.get([x as f64 * (2.0 * NOISESCALE), y as f64 * (2.0 * NOISESCALE)]));
@@ -123,6 +122,38 @@ impl MapGenerator {
         costmap.push(cost);
         tilemap.push((t, alt));
         build_layer.push(None);
+      }
+    }
+
+    // Edges pass
+    for x in 0..MAPSIZE_MAX_X {
+      for y in 0..MAPSIZE_MAX_Y {
+        let id = tilemap.get(getmapvecidx(x, y)).unwrap().0.id;
+
+             //         North, East,  South,  West
+        let mut edge = (false, false, false, false);
+        if x > 0 { // West
+          if tilemap.get(getmapvecidx(x-1, y)).unwrap().0.id != id {
+            edge.3 = true;
+          }
+        }
+        if x < (MAPSIZE_MAX_X - 1) { // East
+          if tilemap.get(getmapvecidx(x+1, y)).unwrap().0.id != id {
+            edge.1 = true;
+          }
+        }
+        if y > 0 { // North
+          if tilemap.get(getmapvecidx(x, y-1)).unwrap().0.id != id {
+            edge.0 = true;
+          }
+        }
+        if y < (MAPSIZE_MAX_Y - 1) { // South
+          if tilemap.get(getmapvecidx(x, y+1)).unwrap().0.id != id {
+            edge.2 = true;
+          }
+        }
+        println!("({}, {}, {}, {})", edge.0, edge.1, edge.2, edge.3);
+
       }
     }
 
